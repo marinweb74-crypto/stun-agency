@@ -773,7 +773,7 @@
         pmremGen.dispose();
 
         // Cross maker — clean smooth cross
-        var makeCross = function (sz, color) {
+        var makeCross = function (sz, mobile) {
           var rr = sz * 0.12,
             halfLen = sz * 0.35;
           var kk = rr * 0.4,
@@ -875,7 +875,7 @@
             }
             return [gx, gy, gz];
           };
-          var R = isMobile ? 200 : 420,
+          var R = mobile ? 200 : 420,
             ext = halfLen + rr * 1.5,
             st = 2 * ext / R,
             SS = R + 1;
@@ -991,17 +991,7 @@
               uN[ni + 2] /= l;
             }
           }
-          var geo = new THREE.BufferGeometry();
-          geo.setIndex(idxArr);
-          geo.setAttribute('position', new THREE.Float32BufferAttribute(uV, 3));
-          geo.setAttribute('normal', new THREE.Float32BufferAttribute(uN, 3));
-          geo.computeBoundingSphere();
-          var mat = new THREE.MeshStandardMaterial({
-            color: color,
-            metalness: 0.35,
-            roughness: 0.15
-          });
-          return new THREE.Mesh(geo, mat);
+          return { pos: new Float32Array(uV), nrm: new Float32Array(uN), idx: new Uint32Array(idxArr) };
         };
 
         // Viewport dimensions in world coords
@@ -1025,62 +1015,79 @@
         var startX = -VW * 0.46;
         var startY = -VH * 0.46;
         var sharedGeo = null;
-        if (window.__geoCache) {
+        var sdfWorker = null;
+
+        // Build THREE geometry from raw arrays and spawn meshes
+        var applyGeo = function (data) {
           sharedGeo = new THREE.BufferGeometry();
-          sharedGeo.setIndex(new THREE.BufferAttribute(new Uint32Array(window.__geoCache.idx), 1));
-          sharedGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(window.__geoCache.pos), 3));
-          sharedGeo.setAttribute('normal', new THREE.Float32BufferAttribute(new Float32Array(window.__geoCache.nrm), 3));
+          sharedGeo.setIndex(new THREE.BufferAttribute(data.idx instanceof Uint32Array ? data.idx : new Uint32Array(data.idx), 1));
+          sharedGeo.setAttribute('position', new THREE.Float32BufferAttribute(data.pos instanceof Float32Array ? data.pos : new Float32Array(data.pos), 3));
+          sharedGeo.setAttribute('normal', new THREE.Float32BufferAttribute(data.nrm instanceof Float32Array ? data.nrm : new Float32Array(data.nrm), 3));
           sharedGeo.computeBoundingSphere();
-        } else {
-          var refMesh = makeCross(54, palette[0]);
-          sharedGeo = refMesh.geometry;
+          for (var i = 0; i < N; i++) {
+            var mesh = new THREE.Mesh(sharedGeo, new THREE.MeshStandardMaterial({
+              color: palette[i % palette.length],
+              metalness: 0.35,
+              roughness: 0.15
+            }));
+            scene.add(mesh);
+            var col = i % cols,
+              row = Math.floor(i / cols);
+            var bx = startX + col * cellW + cellW * 0.5 + (Math.random() - 0.5) * cellW * 0.35;
+            var by = startY + row * cellH + cellH * 0.5 + (Math.random() - 0.5) * cellH * 0.35;
+            B.push({
+              m: mesh,
+              sz: 54,
+              rad: 54 * 0.4,
+              ox: bx,
+              oy: by,
+              dx: 0,
+              dy: 0,
+              dz: 0,
+              dvx: 0,
+              dvy: 0,
+              dvz: 0,
+              drx: 0,
+              dry: 0,
+              drz: 0,
+              ph: Math.random() * Math.PI * 2
+            });
+            mesh.position.set(bx, by, -2 + Math.random() * 4);
+          }
+        };
+
+        var cacheGeo = function (data) {
           try {
-            var cPos = new Float32Array(sharedGeo.attributes.position.array);
-            var cNrm = new Float32Array(sharedGeo.attributes.normal.array);
-            var cIdx = sharedGeo.index ? new Uint32Array(sharedGeo.index.array) : new Uint32Array(0);
             var dbR = indexedDB.open('stunGeo', 1);
-            dbR.onupgradeneeded = function (e) {
-              e.target.result.createObjectStore('g');
-            };
+            dbR.onupgradeneeded = function (e) { e.target.result.createObjectStore('g'); };
             dbR.onsuccess = function (e) {
               var tx = e.target.result.transaction('g', 'readwrite');
-              tx.objectStore('g').put({
-                pos: cPos,
-                nrm: cNrm,
-                idx: cIdx
-              }, 'c1');
+              tx.objectStore('g').put({ pos: data.pos, nrm: data.nrm, idx: data.idx }, 'c1');
             };
           } catch (ex) { }
-        }
-        var sz = 54;
-        for (var i = 0; i < N; i++) {
-          var mesh = new THREE.Mesh(sharedGeo, new THREE.MeshStandardMaterial({
-            color: palette[i % palette.length],
-            metalness: 0.35,
-            roughness: 0.15
-          }));
-          scene.add(mesh);
-          var col = i % cols,
-            row = Math.floor(i / cols);
-          var bx = startX + col * cellW + cellW * 0.5 + (Math.random() - 0.5) * cellW * 0.35;
-          var by = startY + row * cellH + cellH * 0.5 + (Math.random() - 0.5) * cellH * 0.35;
-          B.push({
-            m: mesh,
-            sz: sz,
-            rad: sz * 0.4,
-            ox: bx,
-            oy: by,
-            dx: 0,
-            dy: 0,
-            dz: 0,
-            dvx: 0,
-            dvy: 0,
-            dvz: 0,
-            drx: 0,
-            dry: 0,
-            drz: 0,
-            ph: Math.random() * Math.PI * 2
-          });
+        };
+
+        if (window.__geoCache) {
+          // Instant: use cached geometry from IndexedDB
+          applyGeo(window.__geoCache);
+        } else if (typeof Worker !== 'undefined') {
+          // First visit: compute SDF in Web Worker (non-blocking)
+          var workerCode = 'var compute = ' + makeCross.toString() + ';\n' +
+            'self.onmessage = function(e) { var r = compute(e.data.sz, e.data.mobile); self.postMessage(r, [r.pos.buffer, r.nrm.buffer, r.idx.buffer]); };';
+          var blob = new Blob([workerCode], { type: 'application/javascript' });
+          sdfWorker = new Worker(URL.createObjectURL(blob));
+          sdfWorker.onmessage = function (e) {
+            URL.revokeObjectURL(blob);
+            applyGeo(e.data);
+            cacheGeo(e.data);
+            sdfWorker = null;
+          };
+          sdfWorker.postMessage({ sz: 54, mobile: isMobile });
+        } else {
+          // Fallback: synchronous (very old browsers)
+          var result = makeCross(54, isMobile);
+          applyGeo(result);
+          cacheGeo(result);
         }
 
         // Mouse tracking
@@ -1141,6 +1148,8 @@
         // Pre-allocate position array (avoid GC every frame)
         var FP = [];
         for (var fpi = 0; fpi < N; fpi++) FP.push([0, 0, 0]);
+        // Guard: skip physics if meshes not yet spawned (worker still computing)
+        var meshesReady = function () { return B.length > 0; };
         var time = 0,
           aid,
           frameCount = 0;
@@ -1159,6 +1168,22 @@
           }
           frameCount++;
           time = performance.now() * 0.001;
+
+          // Skip physics if worker still computing geometry
+          if (!meshesReady()) {
+            if (usePostProcessing) {
+              renderer.setRenderTarget(rt);
+              renderer.render(scene, camera);
+              renderer.setRenderTarget(null);
+              postQuad.material = postMat;
+              renderer.render(postScene, postCamera);
+            } else {
+              renderer.render(scene, camera);
+            }
+            aid = requestAnimationFrame(tick);
+            return;
+          }
+
           mdx = mx - pmx;
           mdy = my - pmy;
           mspd = Math.sqrt(mdx * mdx + mdy * mdy);
@@ -1323,6 +1348,7 @@
         window.addEventListener('resize', onResize);
         return function () {
           cancelAnimationFrame(aid);
+          if (sdfWorker) { sdfWorker.terminate(); sdfWorker = null; }
           visObs.disconnect();
           container.removeEventListener('mousemove', onMove);
           container.removeEventListener('mouseenter', onEnter);
@@ -2931,53 +2957,59 @@
         var ctx = canvas.getContext('2d', {
           willReadFrequently: true
         });
+        var rafId = null;
 
-        // Step 1: Load GIF, play it through, capture every frame with chroma key
-        var img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = function () {
-          canvas.width = img.width;
-          canvas.height = img.height;
+        // Step 1: Parse GIF frames properly using gifuct-js
+        Promise.all([
+          fetch('./cat.gif').then(function (r) { return r.arrayBuffer(); }),
+          import('https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm')
+        ]).then(function (results) {
+          var buffer = results[0];
+          var gifuct = results[1];
+          var gif = gifuct.parseGIF(buffer);
+          var rawFrames = gifuct.decompressFrames(gif, true);
+          if (rawFrames.length === 0) return;
 
-          // Capture frames by drawing GIF at intervals as it animates
+          var gw = rawFrames[0].dims.width;
+          var gh = rawFrames[0].dims.height;
+          canvas.width = gw;
+          canvas.height = gh;
+
+          // Composite each frame and apply chroma key
+          var tempCanvas = document.createElement('canvas');
+          tempCanvas.width = gw;
+          tempCanvas.height = gh;
+          var tempCtx = tempCanvas.getContext('2d');
           var frames = [];
-          var captureInterval = 50; // capture every 50ms
-          var maxFrames = 200;
-          var captureCount = 0;
-          var captureTimer = setInterval(function () {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            var d = imageData.data;
+
+          rawFrames.forEach(function (frame) {
+            if (frame.disposalType === 2) {
+              tempCtx.clearRect(0, 0, gw, gh);
+            }
+            var patchData = new ImageData(
+              new Uint8ClampedArray(frame.patch),
+              frame.dims.width,
+              frame.dims.height
+            );
+            tempCtx.putImageData(patchData, frame.dims.left, frame.dims.top);
+            var fullFrame = tempCtx.getImageData(0, 0, gw, gh);
+
+            // Chroma key: remove green
+            var d = fullFrame.data;
             for (var i = 0; i < d.length; i += 4) {
-              var r = d[i],
-                g = d[i + 1],
-                b = d[i + 2];
+              var r = d[i], g = d[i + 1], b = d[i + 2];
               if (g > 60 && g > r * 1.2 && g > b * 1.2) {
                 d[i + 3] = 0;
               }
             }
-            frames.push(imageData);
-            captureCount++;
-            if (captureCount >= maxFrames) {
-              clearInterval(captureTimer);
-              framesRef.current = frames;
-              console.log('Captured', frames.length, 'frames');
-              // Show first frame
-              ctx.putImageData(frames[0], 0, 0);
-            }
-          }, captureInterval);
+            frames.push(fullFrame);
+          });
 
-          // Stop capturing after GIF loops once (~12s)
-          setTimeout(function () {
-            clearInterval(captureTimer);
-            if (frames.length > 0 && framesRef.current.length === 0) {
-              framesRef.current = frames;
-              console.log('Captured', frames.length, 'frames (timeout)');
-              ctx.putImageData(frames[0], 0, 0);
-            }
-          }, 7000);
-        };
-        img.src = './cat.gif';
+          framesRef.current = frames;
+          if (frames.length > 0) {
+            ctx.putImageData(frames[0], 0, 0);
+          }
+        }).catch(function () {});
 
         // Step 2: scroll-driven frame display
         function tick() {
@@ -2997,9 +3029,14 @@
               }
             }
           }
-          requestAnimationFrame(tick);
+          rafId = requestAnimationFrame(tick);
         }
-        requestAnimationFrame(tick);
+        rafId = requestAnimationFrame(tick);
+
+        // Cleanup
+        return function () {
+          if (rafId) cancelAnimationFrame(rafId);
+        };
       }, []);
       return /*#__PURE__*/React.createElement("section", {
         ref: sectionRef,
