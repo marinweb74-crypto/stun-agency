@@ -14,6 +14,10 @@
 
   <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
   <script>window.onerror = function (m, s, l, c, e) { document.body.innerHTML = '<pre style="color:red;padding:40px;font-size:14px">' + m + '\n\nLine: ' + l + '\n' + (e && e.stack || '') + '</pre>'; }</script>
+  <script>
+    window.__geoCache = null;
+    (function () { try { var r = indexedDB.open('stunGeo', 1); r.onupgradeneeded = function (e) { e.target.result.createObjectStore('g') }; r.onsuccess = function (e) { try { var tx = e.target.result.transaction('g', 'readonly'); var g = tx.objectStore('g').get('c1'); g.onsuccess = function () { window.__geoCache = g.result || null }; g.onerror = function () { } } catch (ex) { } }; r.onerror = function () { } } catch (ex) { } })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -769,7 +773,7 @@
         pmremGen.dispose();
 
         // Cross maker — clean smooth cross
-        var makeCross = function (sz, mobile) {
+        var makeCross = function (sz, color) {
           var rr = sz * 0.12,
             halfLen = sz * 0.35;
           var kk = rr * 0.4,
@@ -871,7 +875,7 @@
             }
             return [gx, gy, gz];
           };
-          var R = mobile ? 200 : 420,
+          var R = isMobile ? 200 : 420,
             ext = halfLen + rr * 1.5,
             st = 2 * ext / R,
             SS = R + 1;
@@ -987,7 +991,17 @@
               uN[ni + 2] /= l;
             }
           }
-          return { pos: new Float32Array(uV), nrm: new Float32Array(uN), idx: new Uint32Array(idxArr) };
+          var geo = new THREE.BufferGeometry();
+          geo.setIndex(idxArr);
+          geo.setAttribute('position', new THREE.Float32BufferAttribute(uV, 3));
+          geo.setAttribute('normal', new THREE.Float32BufferAttribute(uN, 3));
+          geo.computeBoundingSphere();
+          var mat = new THREE.MeshStandardMaterial({
+            color: color,
+            metalness: 0.35,
+            roughness: 0.15
+          });
+          return new THREE.Mesh(geo, mat);
         };
 
         // Viewport dimensions in world coords
@@ -1011,69 +1025,57 @@
         var startX = -VW * 0.46;
         var startY = -VH * 0.46;
         var sharedGeo = null;
-
-        // Build THREE geometry from raw arrays and spawn meshes
-        var applyGeo = function (data) {
+        if (window.__geoCache) {
           sharedGeo = new THREE.BufferGeometry();
-          sharedGeo.setIndex(new THREE.BufferAttribute(data.idx instanceof Uint32Array ? data.idx : new Uint32Array(data.idx), 1));
-          sharedGeo.setAttribute('position', new THREE.Float32BufferAttribute(data.pos instanceof Float32Array ? data.pos : new Float32Array(data.pos), 3));
-          sharedGeo.setAttribute('normal', new THREE.Float32BufferAttribute(data.nrm instanceof Float32Array ? data.nrm : new Float32Array(data.nrm), 3));
+          sharedGeo.setIndex(new THREE.BufferAttribute(new Uint32Array(window.__geoCache.idx), 1));
+          sharedGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(window.__geoCache.pos), 3));
+          sharedGeo.setAttribute('normal', new THREE.Float32BufferAttribute(new Float32Array(window.__geoCache.nrm), 3));
           sharedGeo.computeBoundingSphere();
-          for (var i = 0; i < N; i++) {
-            var mesh = new THREE.Mesh(sharedGeo, new THREE.MeshStandardMaterial({
-              color: palette[i % palette.length],
-              metalness: 0.35,
-              roughness: 0.15
-            }));
-            scene.add(mesh);
-            var col = i % cols,
-              row = Math.floor(i / cols);
-            var bx = startX + col * cellW + cellW * 0.5 + (Math.random() - 0.5) * cellW * 0.35;
-            var by = startY + row * cellH + cellH * 0.5 + (Math.random() - 0.5) * cellH * 0.35;
-            B.push({
-              m: mesh,
-              sz: 54,
-              rad: 54 * 0.4,
-              ox: bx,
-              oy: by,
-              dx: 0,
-              dy: 0,
-              dz: 0,
-              dvx: 0,
-              dvy: 0,
-              dvz: 0,
-              drx: 0,
-              dry: 0,
-              drz: 0,
-              ph: Math.random() * Math.PI * 2
-            });
-            mesh.position.set(bx, by, -2 + Math.random() * 4);
-          }
-        };
-
-        // Load pre-computed geometry from binary file (instant, ~2.3MB gzip)
-        var geoReq = new XMLHttpRequest();
-        geoReq.open('GET', './cross-geo.bin', false); // synchronous — blocks until loaded
-        geoReq.responseType = 'arraybuffer';
-        geoReq.send();
-        if (geoReq.status === 200 && geoReq.response) {
-          var ab = geoReq.response;
-          var header = new Uint32Array(ab, 0, 2);
-          var vertCount = header[0], idxCount = header[1];
-          var posOff = 8;
-          var nrmOff = posOff + vertCount * 3 * 4;
-          var idxOff = nrmOff + vertCount * 3;
-          var pos = new Float32Array(ab, posOff, vertCount * 3);
-          var nrmI8 = new Int8Array(ab, nrmOff, vertCount * 3);
-          // Decode normals from Int8 to Float32
-          var nrm = new Float32Array(vertCount * 3);
-          for (var ni = 0; ni < nrm.length; ni++) nrm[ni] = nrmI8[ni] / 127;
-          var idx = new Uint32Array(ab, idxOff, idxCount);
-          applyGeo({ pos: pos, nrm: nrm, idx: idx });
         } else {
-          // Fallback: compute on the fly
-          var result = makeCross(54, isMobile);
-          applyGeo(result);
+          var refMesh = makeCross(54, palette[0]);
+          sharedGeo = refMesh.geometry;
+          try {
+            var cPos = new Float32Array(sharedGeo.attributes.position.array);
+            var cNrm = new Float32Array(sharedGeo.attributes.normal.array);
+            var cIdx = sharedGeo.index ? new Uint32Array(sharedGeo.index.array) : new Uint32Array(0);
+            var dbR = indexedDB.open('stunGeo', 1);
+            dbR.onupgradeneeded = function (e) { e.target.result.createObjectStore('g'); };
+            dbR.onsuccess = function (e) {
+              var tx = e.target.result.transaction('g', 'readwrite');
+              tx.objectStore('g').put({ pos: cPos, nrm: cNrm, idx: cIdx }, 'c1');
+            };
+          } catch (ex) { }
+        }
+        var sz = 54;
+        for (var i = 0; i < N; i++) {
+          var mesh = new THREE.Mesh(sharedGeo, new THREE.MeshStandardMaterial({
+            color: palette[i % palette.length],
+            metalness: 0.35,
+            roughness: 0.15
+          }));
+          scene.add(mesh);
+          var col = i % cols,
+            row = Math.floor(i / cols);
+          var bx = startX + col * cellW + cellW * 0.5 + (Math.random() - 0.5) * cellW * 0.35;
+          var by = startY + row * cellH + cellH * 0.5 + (Math.random() - 0.5) * cellH * 0.35;
+          B.push({
+            m: mesh,
+            sz: sz,
+            rad: sz * 0.4,
+            ox: bx,
+            oy: by,
+            dx: 0,
+            dy: 0,
+            dz: 0,
+            dvx: 0,
+            dvy: 0,
+            dvz: 0,
+            drx: 0,
+            dry: 0,
+            drz: 0,
+            ph: Math.random() * Math.PI * 2
+          });
+          mesh.position.set(bx, by, -2 + Math.random() * 4);
         }
 
         // Mouse tracking
