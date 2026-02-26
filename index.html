@@ -14,10 +14,6 @@
 
   <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
   <script>window.onerror = function (m, s, l, c, e) { document.body.innerHTML = '<pre style="color:red;padding:40px;font-size:14px">' + m + '\n\nLine: ' + l + '\n' + (e && e.stack || '') + '</pre>'; }</script>
-  <script>
-    window.__geoCache = null;
-    (function () { try { var r = indexedDB.open('stunGeo', 1); r.onupgradeneeded = function (e) { e.target.result.createObjectStore('g') }; r.onsuccess = function (e) { try { var tx = e.target.result.transaction('g', 'readonly'); var g = tx.objectStore('g').get('c1'); g.onsuccess = function () { window.__geoCache = g.result || null }; g.onerror = function () { } } catch (ex) { } }; r.onerror = function () { } } catch (ex) { } })();
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -1015,7 +1011,6 @@
         var startX = -VW * 0.46;
         var startY = -VH * 0.46;
         var sharedGeo = null;
-        var sdfWorker = null;
 
         // Build THREE geometry from raw arrays and spawn meshes
         var applyGeo = function (data) {
@@ -1056,38 +1051,29 @@
           }
         };
 
-        var cacheGeo = function (data) {
-          try {
-            var dbR = indexedDB.open('stunGeo', 1);
-            dbR.onupgradeneeded = function (e) { e.target.result.createObjectStore('g'); };
-            dbR.onsuccess = function (e) {
-              var tx = e.target.result.transaction('g', 'readwrite');
-              tx.objectStore('g').put({ pos: data.pos, nrm: data.nrm, idx: data.idx }, 'c1');
-            };
-          } catch (ex) { }
-        };
-
-        if (window.__geoCache) {
-          // Instant: use cached geometry from IndexedDB
-          applyGeo(window.__geoCache);
-        } else if (typeof Worker !== 'undefined') {
-          // First visit: compute SDF in Web Worker (non-blocking)
-          var workerCode = 'var compute = ' + makeCross.toString() + ';\n' +
-            'self.onmessage = function(e) { var r = compute(e.data.sz, e.data.mobile); self.postMessage(r, [r.pos.buffer, r.nrm.buffer, r.idx.buffer]); };';
-          var blob = new Blob([workerCode], { type: 'application/javascript' });
-          sdfWorker = new Worker(URL.createObjectURL(blob));
-          sdfWorker.onmessage = function (e) {
-            URL.revokeObjectURL(blob);
-            applyGeo(e.data);
-            cacheGeo(e.data);
-            sdfWorker = null;
-          };
-          sdfWorker.postMessage({ sz: 54, mobile: isMobile });
+        // Load pre-computed geometry from binary file (instant, ~2.3MB gzip)
+        var geoReq = new XMLHttpRequest();
+        geoReq.open('GET', './cross-geo.bin', false); // synchronous — blocks until loaded
+        geoReq.responseType = 'arraybuffer';
+        geoReq.send();
+        if (geoReq.status === 200 && geoReq.response) {
+          var ab = geoReq.response;
+          var header = new Uint32Array(ab, 0, 2);
+          var vertCount = header[0], idxCount = header[1];
+          var posOff = 8;
+          var nrmOff = posOff + vertCount * 3 * 4;
+          var idxOff = nrmOff + vertCount * 3;
+          var pos = new Float32Array(ab, posOff, vertCount * 3);
+          var nrmI8 = new Int8Array(ab, nrmOff, vertCount * 3);
+          // Decode normals from Int8 to Float32
+          var nrm = new Float32Array(vertCount * 3);
+          for (var ni = 0; ni < nrm.length; ni++) nrm[ni] = nrmI8[ni] / 127;
+          var idx = new Uint32Array(ab, idxOff, idxCount);
+          applyGeo({ pos: pos, nrm: nrm, idx: idx });
         } else {
-          // Fallback: synchronous (very old browsers)
+          // Fallback: compute on the fly
           var result = makeCross(54, isMobile);
           applyGeo(result);
-          cacheGeo(result);
         }
 
         // Mouse tracking
@@ -1148,8 +1134,6 @@
         // Pre-allocate position array (avoid GC every frame)
         var FP = [];
         for (var fpi = 0; fpi < N; fpi++) FP.push([0, 0, 0]);
-        // Guard: skip physics if meshes not yet spawned (worker still computing)
-        var meshesReady = function () { return B.length > 0; };
         var time = 0,
           aid,
           frameCount = 0;
@@ -1168,21 +1152,6 @@
           }
           frameCount++;
           time = performance.now() * 0.001;
-
-          // Skip physics if worker still computing geometry
-          if (!meshesReady()) {
-            if (usePostProcessing) {
-              renderer.setRenderTarget(rt);
-              renderer.render(scene, camera);
-              renderer.setRenderTarget(null);
-              postQuad.material = postMat;
-              renderer.render(postScene, postCamera);
-            } else {
-              renderer.render(scene, camera);
-            }
-            aid = requestAnimationFrame(tick);
-            return;
-          }
 
           mdx = mx - pmx;
           mdy = my - pmy;
@@ -1348,7 +1317,6 @@
         window.addEventListener('resize', onResize);
         return function () {
           cancelAnimationFrame(aid);
-          if (sdfWorker) { sdfWorker.terminate(); sdfWorker = null; }
           visObs.disconnect();
           container.removeEventListener('mousemove', onMove);
           container.removeEventListener('mouseenter', onEnter);

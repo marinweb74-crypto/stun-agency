@@ -21,3 +21,6 @@ server.js
 start_server.py
 docs/
 image_2026-*.png
+cross-desktop.bin
+cross-mobile.bin
+*.bin.gz
