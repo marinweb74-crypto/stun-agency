@@ -1906,8 +1906,8 @@
           key: i,
           style: {
             flexShrink: 0,
-            width: isMob ? '80vw' : '65vw',
-            paddingLeft: isMob ? '15vw' : '0',
+            width: isMob ? '90vw' : '65vw',
+            paddingLeft: 0,
             position: 'relative',
             zIndex: 1,
             display: 'flex',
@@ -1929,13 +1929,14 @@
         }, s.id), /*#__PURE__*/React.createElement("h3", {
           style: {
             fontFamily: 'Onest, sans-serif',
-            fontSize: isMob ? '60px' : '110px',
+            fontSize: isMob ? '48px' : '110px',
             fontWeight: 900,
             color: '#fff',
             textTransform: 'uppercase',
             marginBottom: isMob ? '20px' : '30px',
             letterSpacing: '3.2px',
-            lineHeight: 1.1
+            lineHeight: 1.1,
+            whiteSpace: isMob ? 'nowrap' : 'normal'
           }
         }, s.title), /*#__PURE__*/React.createElement("p", {
           style: {
