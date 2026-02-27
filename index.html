@@ -26,6 +26,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://prod.spline.design" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="modulepreload" href="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js">
+  <link rel="preload" href="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode" as="fetch" crossorigin>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
   <link
     href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800&family=Onest:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Unbounded:wght@600&display=swap"
     rel="stylesheet">
@@ -3245,24 +3248,6 @@
       var bp = useBreakpoint();
       var isMob = bp === 'mobile';
       var sectionRef = useRef(null);
-      var splineLoaded = useRef(false);
-      var _st = useState(false);
-      var showSpline = _st[0];
-      var setShowSpline = _st[1];
-
-      useEffect(function () {
-        var el = sectionRef.current;
-        if (!el || splineLoaded.current) return;
-        var obs = new IntersectionObserver(function (entries) {
-          if (entries[0].isIntersecting) {
-            splineLoaded.current = true;
-            setShowSpline(true);
-            obs.disconnect();
-          }
-        }, { rootMargin: '4000px' });
-        obs.observe(el);
-        return function () { obs.disconnect(); };
-      }, []);
 
       return /*#__PURE__*/React.createElement("section", {
         ref: sectionRef,
@@ -3275,7 +3260,7 @@
           background: 'inherit',
           overflow: 'hidden'
         }
-      }, showSpline && /*#__PURE__*/React.createElement("spline-viewer", {
+      }, /*#__PURE__*/React.createElement("spline-viewer", {
         url: "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode",
         style: {
           width: '100%',
@@ -3602,7 +3587,6 @@
     }
     ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
   </script>
-  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
 </body>
 
 </html>
