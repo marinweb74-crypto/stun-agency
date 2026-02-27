@@ -54,10 +54,6 @@
       scroll-behavior: auto;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
     body {
       font-family: 'Onest', sans-serif;
       font-weight: 500;
@@ -375,12 +371,6 @@
       [data-magnetic] {
         min-height: 44px;
         min-width: 44px;
-      }
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
       }
     }
 
@@ -797,10 +787,6 @@
       }
     });
 
-    // ========== 3D RENDERER GLOBAL REF (for dispose before Spline) ==========
-    var _threeRenderer = null;
-    var _threeCanvas = null;
-
     // ========== 3D STELLATED SCENE ==========
     function StellatedScene() {
       var bp = useBreakpoint();
@@ -826,14 +812,11 @@
           alpha: false,
           powerPreference: 'high-performance',
           stencil: false,
-          preserveDrawingBuffer: true
+          preserveDrawingBuffer: false
         });
         renderer.setSize(w, h);
         renderer.setPixelRatio(devCap.pixelRatio);
         renderer.outputEncoding = THREE.sRGBEncoding;
-        _threeRenderer = renderer;
-        _threeCanvas = canvas;
-
         // Post-processing (disabled on mobile and low-end devices)
         var usePostProcessing = !isMobile && devCap.tier !== 'low';
         var dpr, rtScale, rt, postScene, postCamera, postMat, postQuad, sMx, sMy, sVel;
@@ -3443,35 +3426,11 @@
         var el = sectionRef.current;
         if (!el) return;
 
-        function disposeThreeJS() {
-          if (!_threeRenderer) return;
-          try {
-            // Screenshot canvas → replace with static image
-            if (_threeCanvas) {
-              var dataUrl = _threeCanvas.toDataURL('image/webp', 0.8);
-              var img = document.createElement('img');
-              img.src = dataUrl;
-              img.style.cssText = _threeCanvas.style.cssText;
-              img.style.width = '100%';
-              img.style.height = '100%';
-              img.style.objectFit = 'cover';
-              img.id = 'three-screenshot';
-              _threeCanvas.parentNode.insertBefore(img, _threeCanvas);
-              _threeCanvas.style.display = 'none';
-            }
-            _threeRenderer.dispose();
-            _threeRenderer.forceContextLoss();
-            _threeRenderer = null;
-          } catch (e) { }
-        }
-
         function loadSpline() {
           if (splineLoaded.current) {
             if (splineElRef.current) splineElRef.current.style.display = '';
             return;
           }
-          // Free GPU before Spline loads
-          disposeThreeJS();
           var cb = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback : setTimeout;
           cb(function () {
             var sv = document.createElement('spline-viewer');
@@ -3484,14 +3443,6 @@
             el.insertBefore(sv, el.firstChild);
             splineElRef.current = sv;
             splineLoaded.current = true;
-            // Hide spinner when Spline is ready
-            var spinner = document.getElementById('spline-spinner');
-            var hideSpinner = function () {
-              if (spinner) spinner.style.opacity = '0';
-              setTimeout(function () { if (spinner) spinner.style.display = 'none'; }, 500);
-            };
-            sv.addEventListener('load', hideSpinner);
-            setTimeout(hideSpinner, 4000);
           });
         }
 
@@ -3574,29 +3525,6 @@
           containIntrinsicSize: '0 100vh'
         }
       },
-        // Loading spinner while Spline loads
-        React.createElement('div', {
-          id: 'spline-spinner',
-          style: {
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2,
-            background: 'inherit',
-            transition: 'opacity 0.5s ease'
-          }
-        }, React.createElement('div', {
-          style: {
-            width: '48px',
-            height: '48px',
-            border: '3px solid rgba(255,255,255,0.15)',
-            borderTopColor: '#1a2ffb',
-            borderRadius: '50%',
-            animation: 'spin 0.8s linear infinite'
-          }
-        })),
         // DIV for removing/blocking Spline logo clicks
         React.createElement('div', {
           style: {
