@@ -13,6 +13,10 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/DRACOLoader.js"></script>
 
   <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+  <!-- GSAP & ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
   <script>window.onerror = function (m, s, l, c, e) { document.body.innerHTML = '<pre style="color:red;padding:40px;font-size:14px">' + m + '\n\nLine: ' + l + '\n' + (e && e.stack || '') + '</pre>'; }</script>
   <script>
     window.__geoCache = null;
@@ -709,15 +713,15 @@
           powerPreference: 'high-performance'
         });
         renderer.setSize(w, h);
-        renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 2) : Math.min(window.devicePixelRatio, 1.25));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.outputEncoding = THREE.sRGBEncoding;
 
         // Post-processing
         var usePostProcessing = !isMobile;
         var dpr, rtScale, rt, postScene, postCamera, postMat, postQuad, sMx, sMy, sVel;
         if (usePostProcessing) {
-          dpr = Math.min(window.devicePixelRatio, 1.25);
-          rtScale = 0.6;
+          dpr = Math.min(window.devicePixelRatio, 2);
+          rtScale = 1.0;
           rt = new THREE.WebGLRenderTarget(w * dpr * rtScale, h * dpr * rtScale, {
             minFilter: THREE.LinearFilter,
             magFilter: THREE.LinearFilter,
@@ -1306,8 +1310,8 @@
           camera.updateProjectionMatrix();
           renderer.setSize(w, h);
           if (usePostProcessing) {
-            var d = Math.min(window.devicePixelRatio, 1.5);
-            var rtS = 0.8;
+            var d = Math.min(window.devicePixelRatio, 2);
+            var rtS = 1.0;
             rt.setSize(w * d * rtS, h * d * rtS);
           }
           VH = 2 * Math.tan(fov2) * 80;
@@ -1731,28 +1735,13 @@
           gap: isMob ? '80px' : '15vw',
           position: 'relative'
         }
-      }, /*#__PURE__*/React.createElement("div", {
-        style: {
-          position: 'absolute',
-          top: isMob ? '0' : '50%',
-          left: isMob ? '10vw' : 0,
-          right: isMob ? 'auto' : 0,
-          bottom: isMob ? '0' : 'auto',
-          width: isMob ? '2px' : '100%',
-          height: isMob ? '100%' : '2px',
-          // Vertical line on mobile
-          background: 'rgba(255,255,255,0.1)',
-          zIndex: 0,
-          transform: isMob ? 'translateY(0)' : 'translateY(-50%)'
-        }
-      }), steps.map(function (s, i) {
+      }, steps.map(function (s, i) {
         return /*#__PURE__*/React.createElement("div", {
           key: i,
           style: {
             flexShrink: 0,
             width: isMob ? '80vw' : '65vw',
             paddingLeft: isMob ? '15vw' : '0',
-            // Push content away from the vertical line
             position: 'relative',
             zIndex: 1,
             display: 'flex',
@@ -1766,30 +1755,15 @@
             fontWeight: 800,
             color: 'transparent',
             WebkitTextStroke: '2px rgba(255,255,255,0.2)',
-            // Thicker stroke
             lineHeight: 1,
             marginBottom: isMob ? '20px' : '30px',
             position: 'relative',
             display: 'inline-block'
           }
-        }, s.id, /*#__PURE__*/React.createElement("div", {
-          style: {
-            position: 'absolute',
-            top: '50%',
-            left: isMob ? 'calc(-10vw)' : '-80px',
-            // Position dot on the vertical line
-            width: isMob ? '20px' : '24px',
-            height: isMob ? '20px' : '24px',
-            borderRadius: '50%',
-            background: '#1a2ffb',
-            boxShadow: '0 0 40px #1a2ffb',
-            transform: isMob ? 'translate(0, -50%)' : 'translateY(-50%)'
-          }
-        })), /*#__PURE__*/React.createElement("h3", {
+        }, s.id), /*#__PURE__*/React.createElement("h3", {
           style: {
             fontFamily: 'Onest, sans-serif',
             fontSize: isMob ? '60px' : '110px',
-            // Adjusted for mobile
             fontWeight: 900,
             color: '#fff',
             textTransform: 'uppercase',
@@ -1857,14 +1831,13 @@
           window.addEventListener('scroll', onScroll, {
             passive: true
           });
+
           var tick = function () {
             smoothP.current += (scrollPRef.current - smoothP.current) * 0.25;
             var p = smoothP.current;
-
-            // Horizontal translate: 0 → -(trackWidth - 100vw)
             var vw = window.innerWidth;
             var trackW = track.scrollWidth;
-            var maxShift = trackW - vw;
+            var maxShift = (trackW - vw) * 0.96;
             var tx = -p * maxShift;
             track.style.transform = 'translateX(' + tx + 'px)';
             animRef.current = requestAnimationFrame(tick);
@@ -1909,7 +1882,7 @@
         id: "about",
         style: {
           position: 'relative',
-          background: '#0a0a0a',
+          background: 'inherit',
           borderRadius: '48px 48px 0 0',
           marginTop: '-100vh',
           zIndex: 2,
@@ -2093,21 +2066,7 @@
           passive: true
         });
 
-        // IntersectionObserver — trigger EXPERTISE slide + description on appear
-        var observer = new IntersectionObserver(function (entries) {
-          if (entries[0].isIntersecting && !inViewRef.current) {
-            inViewRef.current = true;
-            setTimeout(function () {
-              if (expertiseRef.current) {
-                expertiseRef.current.style.paddingLeft = window.innerWidth * 0.33 + 'px';
-              }
-            }, 400);
-            observer.disconnect();
-          }
-        }, {
-          threshold: 0.05
-        });
-        observer.observe(section);
+        var observer = { disconnect: function () { } };
         var t0 = performance.now();
         // Smoothed scroll value for buttery interpolation
         var smoothP = 0;
@@ -2154,6 +2113,7 @@
 
           // === ONE continuous animation from start to end ===
           var ap = Math.min(1, scrollPx / sectionTotal);
+
 
           // COLLECT phase: ap 0.55→0.70 unflip, ap 0.70→0.90 unfan
           var unflipP = Math.max(0, Math.min(1, (ap - 0.55) / 0.15));
@@ -2209,10 +2169,23 @@
         };
         animRef.current = requestAnimationFrame(animate);
         onScroll();
+
+        // EXPERTISE slides right when scrolled into view
+        var expObs = new IntersectionObserver(function (entries) {
+          if (entries[0].isIntersecting && expertiseRef.current) {
+            setTimeout(function () {
+              expertiseRef.current.style.paddingLeft = '33vw';
+            }, 600);
+            expObs.disconnect();
+          }
+        }, { threshold: 0.3 });
+        if (expertiseRef.current) expObs.observe(expertiseRef.current);
+
         return function () {
           window.removeEventListener('scroll', onScroll);
           if (animRef.current) cancelAnimationFrame(animRef.current);
           observer.disconnect();
+          expObs.disconnect();
         };
       }, [isMob]);
       var cardW = isMob ? 280 : 420,
@@ -2224,7 +2197,8 @@
           height: isMob ? 'auto' : '530vh',
           position: 'relative',
           background: '#f0f1fa',
-          zIndex: 1
+          zIndex: 1,
+          marginTop: '-1px'
         }
       }, /*#__PURE__*/React.createElement("div", {
         "data-cards-wrap": "",
@@ -2264,18 +2238,21 @@
         style: {
           position: 'relative',
           display: 'inline-block',
-          paddingLeft: '0px',
-          transition: 'padding-left 0.8s cubic-bezier(0.22, 1, 0.36, 1)'
+          paddingLeft: '0',
+          transition: 'padding-left 1.2s cubic-bezier(0.16, 1, 0.3, 1)'
         }
       }, "EXPERTISE")), /*#__PURE__*/React.createElement("div", {
         ref: descRef,
         style: {
           position: 'absolute',
-          top: isMob ? '100%' : 'auto',
+          top: isMob ? '100%' : '0',
           marginTop: isMob ? '16px' : '0',
-          bottom: isMob ? 'auto' : '0.25em',
-          right: isMob ? 'auto' : '0',
+          bottom: 'auto',
+          right: isMob ? 'auto' : 'calc(100% - 83vw)',
           left: isMob ? '0' : 'auto',
+          height: isMob ? 'auto' : '8.8vw',
+          display: isMob ? 'block' : 'flex',
+          alignItems: 'center',
           maxWidth: '458px',
           width: 'max-content',
           letterSpacing: 'normal',
@@ -2979,7 +2956,7 @@
           if (frames.length > 0) {
             ctx.putImageData(frames[0], 0, 0);
           }
-        }).catch(function () {});
+        }).catch(function () { });
 
         // Step 2: scroll-driven frame display
         function tick() {
@@ -3040,137 +3017,123 @@
       var bp = useBreakpoint();
       var isMob = bp === 'mobile';
       var sectionRef = useRef(null);
-      var rectRef = useRef(null);
-      var bendRef = useRef(null);
-      var curRef = useRef({
-        x: -65,
-        y: -35,
-        s: 0.08,
-        rx: -12,
-        ry: -24,
-        rz: 6,
-        op: 0.2,
-        sy: 10,
-        sb: 20,
-        sa: 0.3,
-        fold: 1.8
-      });
+      var rect1Ref = useRef(null);
+      var rect2Ref = useRef(null);
+      var bend1Ref = useRef(null);
+      var bend2Ref = useRef(null);
+      var vid1Ref = useRef(null);
+      var vid2Ref = useRef(null);
+      var cur1 = useRef({ x: -65, y: -35, s: 0.08, rx: -12, ry: -24, rz: 6, op: 0, sy: 10, sb: 20, sa: 0, fold: 1.8 });
+      var cur2 = useRef({ x: 65, y: 35, s: 0.08, rx: -12, ry: 24, rz: -6, op: 0, sy: 10, sb: 20, sa: 0, fold: 1.8 });
       var rafRef = useRef(null);
       useEffect(function () {
         var section = sectionRef.current;
-        var rect = rectRef.current;
-        var bend = bendRef.current;
-        if (!section || !rect) return;
-        var cur = curRef.current;
+        var r1 = rect1Ref.current;
+        var r2 = rect2Ref.current;
+        var b1 = bend1Ref.current;
+        var b2 = bend2Ref.current;
+        var v1 = vid1Ref.current;
+        var v2 = vid2Ref.current;
+        if (!section || !r1 || !r2) return;
+        var c1 = cur1.current;
+        var c2 = cur2.current;
         var LERP = 0.09;
-        function lerp(a, b, t) {
-          return a + (b - a) * t;
-        }
-        function getTargets() {
-          var bounds = section.getBoundingClientRect();
-          var vh = window.innerHeight;
-          var sectionH = section.offsetHeight;
-          var raw = (vh - bounds.top) / (sectionH + vh);
-          var p = Math.max(0, Math.min(1, (raw - 0.1) / 0.85));
+        function lerp(a, b, t) { return a + (b - a) * t; }
+
+        var d1 = { ix: -65, iy: -35, iry: -24, irz: 6, ex: 75, ey: -8, ery: 18, erz: -3 };
+        var d2 = { ix: 65, iy: 35, iry: 24, irz: -6, ex: -75, ey: 8, ery: -18, erz: 3 };
+
+        function getTargets(p, d) {
           if (p < 0.22) {
-            // Phase 1: FLY IN from top-left, grows 0.08→0.75, strong bend
             var t = p / 0.22;
             var e = 1 - Math.pow(1 - t, 3);
             return {
-              x: -65 * (1 - e),
-              y: -35 * (1 - e),
+              x: d.ix * (1 - e), y: d.iy * (1 - e),
               s: 0.08 + 0.67 * e,
-              rx: -12 * (1 - e),
-              ry: -24 * (1 - e),
-              rz: 6 * (1 - e),
-              op: 0.2 + 0.6 * e,
-              sy: 10 + 50 * e,
-              sb: 20 + 100 * e,
-              sa: 0.3 + 0.25 * e,
+              rx: -12 * (1 - e), ry: d.iry * (1 - e), rz: d.irz * (1 - e),
+              op: 0.85 * e,
+              sy: 10 + 50 * e, sb: 20 + 100 * e, sa: 0.3 + 0.25 * e,
               fold: 1.8 - 0.8 * e
             };
           }
-          // boundary: s=0.75 fold=1.0
-
           if (p < 0.55) {
-            // Phase 2: GROW 0.75→1.0, bend straightens, gentle wobble
             var t2 = (p - 0.22) / 0.33;
             var e2 = t2 < 0.5 ? 4 * t2 * t2 * t2 : 1 - Math.pow(-2 * t2 + 2, 3) / 2;
             var wobble = Math.sin(t2 * Math.PI * 2) * (1 - t2);
             return {
-              x: 0,
-              y: 0,
+              x: 0, y: 0,
               s: 0.75 + 0.25 * e2,
-              rx: 3 * wobble,
-              ry: -4 * wobble,
-              rz: 1.5 * wobble,
-              op: 0.8 + 0.2 * e2,
-              sy: 60 + 20 * e2,
-              sb: 120 + 40 * e2,
-              sa: 0.55 + 0.1 * e2,
+              rx: 3 * wobble, ry: -4 * wobble, rz: 1.5 * wobble,
+              op: 0.85 + 0.15 * e2,
+              sy: 60 + 20 * e2, sb: 120 + 40 * e2, sa: 0.55 + 0.1 * e2,
               fold: 1.0 * (1 - e2)
             };
           }
-          // boundary: s=1 fold=0
-
           if (p < 0.72) {
-            return {
-              x: 0,
-              y: 0,
-              s: 1.0,
-              rx: 0,
-              ry: 0,
-              rz: 0,
-              op: 1,
-              sy: 80,
-              sb: 160,
-              sa: 0.65,
-              fold: 0
-            };
+            return { x: 0, y: 0, s: 1.0, rx: 0, ry: 0, rz: 0, op: 1, sy: 80, sb: 160, sa: 0.65, fold: 0 };
           }
-
-          // Phase 4: EXIT right, slight bend returns
           var t3 = (p - 0.72) / 0.28;
           var e3 = t3 * t3;
           return {
-            x: 75 * e3,
-            y: -8 * e3,
-            s: 1.0,
-            rx: 6 * e3,
-            ry: 18 * e3,
-            rz: -3 * e3,
-            op: 1 - 0.7 * e3,
-            sy: 80 - 50 * e3,
-            sb: 160 - 100 * e3,
-            sa: 0.65 - 0.35 * e3,
+            x: d.ex * e3, y: d.ey * e3, s: 1.0,
+            rx: 6 * e3, ry: d.ery * e3, rz: d.erz * e3,
+            op: 1 - e3,
+            sy: 80 - 50 * e3, sb: 160 - 100 * e3, sa: 0.65 - 0.65 * e3,
             fold: 0.35 * e3
           };
         }
-        function animate() {
-          var tgt = getTargets();
-          cur.x = lerp(cur.x, tgt.x, LERP);
-          cur.y = lerp(cur.y, tgt.y, LERP);
-          cur.s = lerp(cur.s, tgt.s, LERP);
-          cur.rx = lerp(cur.rx, tgt.rx, LERP);
-          cur.ry = lerp(cur.ry, tgt.ry, LERP);
-          cur.rz = lerp(cur.rz, tgt.rz, LERP);
-          cur.op = lerp(cur.op, tgt.op, LERP);
-          cur.sy = lerp(cur.sy, tgt.sy, LERP);
-          cur.sb = lerp(cur.sb, tgt.sb, LERP);
-          cur.sa = lerp(cur.sa, tgt.sa, LERP);
-          cur.fold = lerp(cur.fold, tgt.fold, LERP);
-          rect.style.transform = 'translateX(' + cur.x + 'vw) translateY(' + cur.y + 'vh) scale(' + cur.s + ') rotateX(' + cur.rx + 'deg) rotateY(' + cur.ry + 'deg) rotateZ(' + cur.rz + 'deg)';
-          rect.style.opacity = cur.op;
-          rect.style.boxShadow = '0 ' + cur.sy + 'px ' + cur.sb + 'px rgba(0,0,0,' + cur.sa + ')';
 
-          // Bend illusion — gradient simulates light on curved surface
-          if (bend) {
+        function applyRect(el, bendEl, cur) {
+          el.style.transform = 'translateX(' + cur.x + 'vw) translateY(' + cur.y + 'vh) scale(' + cur.s + ') rotateX(' + cur.rx + 'deg) rotateY(' + cur.ry + 'deg) rotateZ(' + cur.rz + 'deg)';
+          el.style.opacity = cur.op;
+          el.style.boxShadow = '0 ' + cur.sy + 'px ' + cur.sb + 'px rgba(0,0,0,' + cur.sa + ')';
+          if (bendEl) {
             var f = cur.fold;
             var hi = (0.05 * f).toFixed(3);
             var lo = (0.12 * f).toFixed(3);
             var mid = (0.18 * f).toFixed(3);
-            bend.style.background = 'linear-gradient(90deg, ' + 'rgba(255,255,255,' + hi + ') 0%, ' + 'rgba(0,0,0,' + lo + ') 35%, ' + 'rgba(0,0,0,' + mid + ') 50%, ' + 'rgba(0,0,0,' + lo + ') 65%, ' + 'rgba(255,255,255,' + hi + ') 100%)';
+            bendEl.style.background = 'linear-gradient(90deg, rgba(255,255,255,' + hi + ') 0%, rgba(0,0,0,' + lo + ') 35%, rgba(0,0,0,' + mid + ') 50%, rgba(0,0,0,' + lo + ') 65%, rgba(255,255,255,' + hi + ') 100%)';
           }
+        }
+
+        function lerpAll(c, tgt) {
+          c.x = lerp(c.x, tgt.x, LERP);
+          c.y = lerp(c.y, tgt.y, LERP);
+          c.s = lerp(c.s, tgt.s, LERP);
+          c.rx = lerp(c.rx, tgt.rx, LERP);
+          c.ry = lerp(c.ry, tgt.ry, LERP);
+          c.rz = lerp(c.rz, tgt.rz, LERP);
+          c.op = lerp(c.op, tgt.op, LERP);
+          c.sy = lerp(c.sy, tgt.sy, LERP);
+          c.sb = lerp(c.sb, tgt.sb, LERP);
+          c.sa = lerp(c.sa, tgt.sa, LERP);
+          c.fold = lerp(c.fold, tgt.fold, LERP);
+        }
+
+        function animate() {
+          var bounds = section.getBoundingClientRect();
+          var vh = window.innerHeight;
+          var sectionH = section.offsetHeight;
+          var raw = (vh - bounds.top) / (sectionH + vh);
+          var pFull = Math.max(0, Math.min(1, (raw - 0.05) / 0.9));
+
+          var p1 = Math.max(0, Math.min(1, pFull / 0.52));
+          lerpAll(c1, getTargets(p1, d1));
+          applyRect(r1, b1, c1);
+
+          var p2 = Math.max(0, Math.min(1, (pFull - 0.48) / 0.52));
+          lerpAll(c2, getTargets(p2, d2));
+          applyRect(r2, b2, c2);
+
+          if (v1) {
+            if (c1.op > 0.05 && v1.paused) v1.play().catch(function () { });
+            else if (c1.op < 0.01 && !v1.paused) v1.pause();
+          }
+          if (v2) {
+            if (c2.op > 0.05 && v2.paused) v2.play().catch(function () { });
+            else if (c2.op < 0.01 && !v2.paused) v2.pause();
+          }
+
           rafRef.current = requestAnimationFrame(animate);
         }
         rafRef.current = requestAnimationFrame(animate);
@@ -3178,61 +3141,59 @@
           if (rafRef.current) cancelAnimationFrame(rafRef.current);
         };
       }, [isMob]);
+      var rectW = isMob ? '92vw' : '88vw';
+      var rectH = isMob ? '55vh' : '80vh';
+      var rectR = isMob ? '20px' : '28px';
+      var rectStyle = {
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, margin: 'auto',
+        width: rectW, height: rectH, borderRadius: rectR,
+        background: '#1a1a1a', willChange: 'transform, opacity',
+        boxShadow: '0 30px 80px rgba(0,0,0,0.6)', overflow: 'hidden',
+        transformStyle: 'preserve-3d', opacity: 0
+      };
+      var bendStyle = { position: 'absolute', inset: 0, borderRadius: 'inherit', pointerEvents: 'none', zIndex: 2 };
+      var vidStyle = { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' };
+      var overlayStyle = {
+        position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 3,
+        background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
+        padding: isMob ? '40px 20px 24px' : '60px 40px 32px',
+        borderRadius: '0 0 ' + rectR + ' ' + rectR
+      };
+      var titleStyle = {
+        fontSize: isMob ? '40px' : '60px', fontFamily: 'Archivo, sans-serif',
+        fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1.1
+      };
+      var descStyle = {
+        fontSize: isMob ? '22px' : '28px', fontFamily: 'Archivo, sans-serif',
+        fontWeight: 400, color: 'rgba(255,255,255,0.6)', margin: 0,
+        marginTop: isMob ? '8px' : '12px', lineHeight: 1.4
+      };
       return /*#__PURE__*/React.createElement("section", {
         ref: sectionRef,
-        style: {
-          position: 'relative',
-          height: isMob ? '550vh' : '700vh',
-          background: '#0a0a0a',
-          zIndex: 1
-        }
+        style: { position: 'relative', height: isMob ? '1000vh' : '1300vh', background: 'inherit', zIndex: 2, marginTop: '-5px', paddingTop: '5px' }
       }, /*#__PURE__*/React.createElement("div", {
         style: {
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          perspective: '1200px'
+          position: 'sticky', top: 0, height: '100vh',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          overflow: 'hidden', perspective: '1200px'
         }
-      }, /*#__PURE__*/React.createElement("div", {
-        ref: rectRef,
-        style: {
-          width: isMob ? '92vw' : '88vw',
-          height: isMob ? '55vh' : '80vh',
-          borderRadius: isMob ? '20px' : '28px',
-          background: '#1a1a1a',
-          willChange: 'transform, opacity',
-          boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transformStyle: 'preserve-3d',
-          position: 'relative'
-        }
-      }, /*#__PURE__*/React.createElement("div", {
-        ref: bendRef,
-        style: {
-          position: 'absolute',
-          inset: 0,
-          borderRadius: 'inherit',
-          pointerEvents: 'none',
-          zIndex: 1
-        }
-      }), /*#__PURE__*/React.createElement("span", {
-        style: {
-          color: 'rgba(255,255,255,0.08)',
-          fontSize: isMob ? '24px' : '48px',
-          fontFamily: 'Archivo, sans-serif',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '6px',
-          userSelect: 'none'
-        }
-      }, "PORTFOLIO"))));
+      },
+      /*#__PURE__*/React.createElement("div", { ref: rect1Ref, style: rectStyle },
+        /*#__PURE__*/React.createElement("video", { ref: vid1Ref, src: './portfolio-reel.mp4', muted: true, loop: true, playsInline: true, preload: 'auto', style: vidStyle }),
+        /*#__PURE__*/React.createElement("div", { ref: bend1Ref, style: bendStyle }),
+        /*#__PURE__*/React.createElement("div", { style: overlayStyle },
+          /*#__PURE__*/React.createElement("h3", { style: titleStyle }, "POP IN THE CITY"),
+          /*#__PURE__*/React.createElement("p", { style: descStyle }, "\u0421\u0430\u0439\u0442 \u0434\u043B\u044F \u043D\u0430\u0434\u0443\u0432\u043D\u044B\u0445 \u0430\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u043E\u0432 \u0432 \u041D\u044C\u044E-\u0419\u043E\u0440\u043A\u0435")
+      )
+      ),
+      /*#__PURE__*/React.createElement("div", { ref: rect2Ref, style: rectStyle },
+        /*#__PURE__*/React.createElement("video", { ref: vid2Ref, src: './portfolio-reel-2.mp4', muted: true, loop: true, playsInline: true, preload: 'auto', style: vidStyle }),
+        /*#__PURE__*/React.createElement("div", { ref: bend2Ref, style: bendStyle }),
+        /*#__PURE__*/React.createElement("div", { style: overlayStyle },
+          /*#__PURE__*/React.createElement("h3", { style: titleStyle }, "CLAYNOSAURZ"),
+          /*#__PURE__*/React.createElement("p", { style: descStyle }, "\u041C\u0438\u043D\u0438-\u0444\u0438\u043B\u044C\u043C\u044B \u0441 3D \u043C\u0438\u0440\u043E\u0432\u043E\u0433\u043E \u0443\u0440\u043E\u0432\u043D\u044F")
+      )
+      )));
     }
 
     // ========== SPLINE 3D SECTION ==========
@@ -3288,7 +3249,7 @@
           position: 'relative',
           width: '100%',
           height: '100vh',
-          background: '#0a0a0a',
+          background: 'inherit',
           overflow: 'hidden'
         }
       }, /*#__PURE__*/React.createElement("spline-viewer", {
@@ -3427,6 +3388,8 @@
 
       );
     }
+
+
     function App() {
       var bp = useBreakpoint();
       var isMob = bp === 'mobile';
@@ -3552,7 +3515,7 @@
         ref: heroScrollRef,
         style: {
           fontSize: isMob ? '13px' : '16px',
-          fontWeight: isMob ? 500 : 550,
+          fontWeight: isMob ? 525 : 578,
           textTransform: 'uppercase',
           fontFamily: 'Archivo, sans-serif',
           letterSpacing: '0.05em',
@@ -3599,7 +3562,9 @@
         y2: "10",
         stroke: "#0a0a12",
         strokeWidth: isMob ? '1.6' : '1.5'
-      })))), /*#__PURE__*/React.createElement(CardServices, null), /*#__PURE__*/React.createElement(AboutSection, null), /*#__PURE__*/React.createElement(PortfolioSection, null), /*#__PURE__*/React.createElement(SplineSection, null));
+      })))),
+
+        /*#__PURE__*/React.createElement(CardServices, null), /*#__PURE__*/React.createElement("div", { style: { background: '#0a0a0a' } }, /*#__PURE__*/React.createElement(AboutSection, null), /*#__PURE__*/React.createElement(PortfolioSection, null), /*#__PURE__*/React.createElement(SplineSection, null)));
     }
     ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
   </script>
