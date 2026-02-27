@@ -24,6 +24,8 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://prod.spline.design" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800&family=Onest:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Unbounded:wght@600&display=swap"
     rel="stylesheet">
@@ -3257,7 +3259,7 @@
             setShowSpline(true);
             obs.disconnect();
           }
-        }, { rootMargin: '200px' });
+        }, { rootMargin: '4000px' });
         obs.observe(el);
         return function () { obs.disconnect(); };
       }, []);
