@@ -17,7 +17,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
-  <script>window.onerror = function (m, s, l, c, e) { document.body.innerHTML = '<pre style="color:red;padding:40px;font-size:14px">' + m + '\n\nLine: ' + l + '\n' + (e && e.stack || '') + '</pre>'; }</script>
+  <script>window.onerror = function (m, s, l, c, e) { if (m === 'Script error.' || !l) return true; if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') { document.body.innerHTML = '<pre style="color:red;padding:40px;font-size:14px">' + m + '\n\nLine: ' + l + '\n' + (e && e.stack || '') + '</pre>'; } }</script>
   <script>
     window.__geoCache = null;
     (function () { try { var r = indexedDB.open('stunGeo', 1); r.onupgradeneeded = function (e) { e.target.result.createObjectStore('g') }; r.onsuccess = function (e) { try { var tx = e.target.result.transaction('g', 'readonly'); var g = tx.objectStore('g').get('c1'); g.onsuccess = function () { window.__geoCache = g.result || null }; g.onerror = function () { } } catch (ex) { } }; r.onerror = function () { } } catch (ex) { } })();
