@@ -3032,7 +3032,11 @@
       return /*#__PURE__*/React.createElement("div", {
         style: {
           position: 'fixed',
-          inset: 0,
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          minHeight: '-webkit-fill-available',
           zIndex: 100000,
           background: '#0a0a0a',
           display: 'flex',
