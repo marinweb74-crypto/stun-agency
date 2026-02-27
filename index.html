@@ -818,7 +818,7 @@
         renderer.setPixelRatio(devCap.pixelRatio);
         renderer.outputEncoding = THREE.sRGBEncoding;
         // Post-processing (disabled on mobile and low-end devices)
-        var usePostProcessing = !isMobile && devCap.tier !== 'low';
+        var usePostProcessing = devCap.tier !== 'low';
         var dpr, rtScale, rt, postScene, postCamera, postMat, postQuad, sMx, sMy, sVel;
         if (usePostProcessing) {
           dpr = devCap.pixelRatio;
