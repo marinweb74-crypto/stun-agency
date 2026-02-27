@@ -26,9 +26,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://prod.spline.design" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <link rel="modulepreload" href="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js">
-  <link rel="preload" href="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode" as="fetch" crossorigin>
-  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
   <link
     href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;800&family=Onest:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&family=Unbounded:wght@600&display=swap"
     rel="stylesheet">
@@ -2825,16 +2822,6 @@
       var barRef = useRef(null);
       var progress = useRef(0);
       useEffect(() => {
-        var splineReady = false;
-        var markReady = function () { splineReady = true; };
-        // Download Spline scene during loading screen
-        fetch('https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode')
-          .then(function (r) { return r.arrayBuffer(); })
-          .then(markReady)
-          .catch(markReady);
-        // Safety timeout — don't block forever
-        var safetyTimer = setTimeout(markReady, 8000);
-
         var target = 33;
         var steps = [{
           at: 100,
@@ -2842,6 +2829,9 @@
         }, {
           at: 400,
           val: 80
+        }, {
+          at: 800,
+          val: 100
         }];
         var timers = steps.map(function (s) {
           return setTimeout(function () {
@@ -2850,12 +2840,11 @@
         });
         var aid;
         var tick = function () {
-          var effectiveTarget = splineReady ? 100 : Math.min(target, 85);
-          progress.current += (effectiveTarget - progress.current) * 0.1;
+          progress.current += (target - progress.current) * 0.1;
           if (barRef.current) {
             barRef.current.style.width = progress.current + '%';
           }
-          if (progress.current > 99.5 && splineReady) {
+          if (progress.current > 99.5) {
             setTimeout(onLoaded, 150);
             return;
           }
@@ -2863,7 +2852,6 @@
         };
         aid = requestAnimationFrame(tick);
         return function () {
-          clearTimeout(safetyTimer);
           timers.forEach(clearTimeout);
           if (aid) cancelAnimationFrame(aid);
         };
@@ -3257,20 +3245,19 @@
       var bp = useBreakpoint();
       var isMob = bp === 'mobile';
       var sectionRef = useRef(null);
-      var splineWrapRef = useRef(null);
       var _vis = useState(false);
-      var visible = _vis[0];
-      var setVisible = _vis[1];
+      var showSpline = _vis[0];
+      var setShowSpline = _vis[1];
 
       useEffect(function () {
         var el = sectionRef.current;
         if (!el) return;
         var obs = new IntersectionObserver(function (entries) {
           if (entries[0].isIntersecting) {
-            setVisible(true);
+            setShowSpline(true);
             obs.disconnect();
           }
-        }, { rootMargin: '200px' });
+        }, { rootMargin: '600px' });
         obs.observe(el);
         return function () { obs.disconnect(); };
       }, []);
@@ -3286,28 +3273,13 @@
           background: 'inherit',
           overflow: 'hidden'
         }
-      }, /*#__PURE__*/React.createElement("div", {
-        ref: splineWrapRef,
-        style: visible ? {
-          position: 'absolute',
-          inset: 0
-        } : {
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100vh',
-          opacity: 0.01,
-          pointerEvents: 'none',
-          zIndex: -1
-        }
-      }, /*#__PURE__*/React.createElement("spline-viewer", {
+      }, showSpline && /*#__PURE__*/React.createElement("spline-viewer", {
         url: "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode",
         style: {
           width: '100%',
           height: '100%'
         }
-      })),
+      }),
 
         // DIV for removing/blocking Spline logo clicks
         React.createElement('div', {
@@ -3628,6 +3600,7 @@
     }
     ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
   </script>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
 </body>
 
 </html>
