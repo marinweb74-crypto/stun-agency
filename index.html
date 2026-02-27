@@ -2825,6 +2825,13 @@
       var barRef = useRef(null);
       var progress = useRef(0);
       useEffect(() => {
+        var splineReady = false;
+        // Download Spline scene during loading screen
+        fetch('https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode')
+          .then(function (r) { return r.arrayBuffer(); })
+          .then(function () { splineReady = true; })
+          .catch(function () { splineReady = true; });
+
         var target = 33;
         var steps = [{
           at: 100,
@@ -2832,9 +2839,6 @@
         }, {
           at: 400,
           val: 80
-        }, {
-          at: 800,
-          val: 100 // Finish smoothly after ~1s
         }];
         var timers = steps.map(function (s) {
           return setTimeout(function () {
@@ -2843,11 +2847,12 @@
         });
         var aid;
         var tick = function () {
-          progress.current += (target - progress.current) * 0.1;
+          var cap = splineReady ? 100 : 85;
+          progress.current += (Math.min(target, cap) - progress.current) * 0.1;
           if (barRef.current) {
             barRef.current.style.width = progress.current + '%';
           }
-          if (progress.current > 99.5) {
+          if (progress.current > 99.5 && splineReady) {
             setTimeout(onLoaded, 150);
             return;
           }
