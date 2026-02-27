@@ -500,8 +500,13 @@
       spaceB.currentTime = 0;
     }
 
-    // Smooth crossfade tick
-    (function crossfadeTick() {
+    // Smooth crossfade tick — only runs when sound is on
+    var crossfadeRAF = null;
+    function crossfadeTick() {
+      if (!globalSoundOn) {
+        crossfadeRAF = null;
+        return;
+      }
       var step = 0.01;
       var mv = parseFloat(globalMusic.volume) || 0;
       if (Math.abs(mv - musicTargetVol) > 0.005) {
@@ -538,8 +543,11 @@
           spaceNext = tmp;
         }
       }
-      requestAnimationFrame(crossfadeTick);
-    })();
+      crossfadeRAF = requestAnimationFrame(crossfadeTick);
+    }
+    function startCrossfade() {
+      if (!crossfadeRAF) crossfadeTick();
+    }
 
     // ========== PRELOADER ==========
     function SplashScreen({
@@ -549,6 +557,7 @@
       var btnRef = useRef(null);
       var handleClick = function () {
         globalSoundOn = true;
+        startCrossfade();
         globalMusic.play().catch(function () { });
         containerRef.current.style.transition = 'opacity 0.6s ease';
         containerRef.current.style.opacity = '0';
@@ -738,11 +747,13 @@
       } catch (e) { }
       _deviceCap = {
         tier: tier,
-        pixelRatio: Math.min(window.devicePixelRatio, 2),
+        pixelRatio: Math.min(window.devicePixelRatio, 1.5),
         postProcessing: tier !== 'low'
       };
       return _deviceCap;
     }
+
+    var _cachedEnvRT = null;
 
     // ========== SCROLL THROTTLE UTILITY ==========
     function throttledScroll(fn) {
@@ -787,17 +798,17 @@
         renderer.outputEncoding = THREE.sRGBEncoding;
 
         // Post-processing (disabled on mobile and low-end devices)
-        var usePostProcessing = !isMobile && devCap.postProcessing;
+        var usePostProcessing = !isMobile && devCap.tier === 'high';
         var dpr, rtScale, rt, postScene, postCamera, postMat, postQuad, sMx, sMy, sVel;
         if (usePostProcessing) {
           dpr = devCap.pixelRatio;
-          rtScale = 1.0;
+          rtScale = 0.75;
           rt = new THREE.WebGLRenderTarget(w * dpr * rtScale, h * dpr * rtScale, {
             minFilter: THREE.LinearFilter,
             magFilter: THREE.LinearFilter,
             format: THREE.RGBAFormat,
             encoding: THREE.sRGBEncoding,
-            samples: devCap.tier === 'high' ? 4 : 2
+            samples: 0
           });
           postScene = new THREE.Scene();
           postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -835,16 +846,18 @@
         keyL.position.set(-50, 60, 40);
         scene.add(keyL);
 
-        // Minimal env map for glossy reflections
-        var pmremGen = new THREE.PMREMGenerator(renderer);
-        var envScene = new THREE.Scene();
-        envScene.background = new THREE.Color(0x0a0a12);
-        var eL1 = new THREE.PointLight(0xfff0dd, 2.5, 100);
-        eL1.position.set(-25, 20, 15);
-        envScene.add(eL1);
-        var envRT = pmremGen.fromScene(envScene);
-        scene.environment = envRT.texture;
-        pmremGen.dispose();
+        // Minimal env map for glossy reflections (cached globally)
+        if (!_cachedEnvRT) {
+          var pmremGen = new THREE.PMREMGenerator(renderer);
+          var envScene = new THREE.Scene();
+          envScene.background = new THREE.Color(0x0a0a12);
+          var eL1 = new THREE.PointLight(0xfff0dd, 2.5, 100);
+          eL1.position.set(-25, 20, 15);
+          envScene.add(eL1);
+          _cachedEnvRT = pmremGen.fromScene(envScene);
+          pmremGen.dispose();
+        }
+        scene.environment = _cachedEnvRT.texture;
 
         // Cross maker — clean smooth cross
         var makeCross = function (sz, color) {
@@ -949,7 +962,7 @@
             }
             return [gx, gy, gz];
           };
-          var R = isMobile ? 200 : 420,
+          var R = isMobile ? 150 : 280,
             ext = halfLen + rr * 1.5,
             st = 2 * ext / R,
             SS = R + 1;
@@ -1226,15 +1239,27 @@
           aid,
           frameCount = 0;
         var sceneVisible = true;
+        var splineVisible = false;
         var visObs = new IntersectionObserver(function (entries) {
           sceneVisible = entries[0].isIntersecting;
-          if (sceneVisible && !aid) tick();
+          if (sceneVisible && !splineVisible && !aid) tick();
         }, {
           threshold: 0
         });
         visObs.observe(container);
+        setTimeout(function () {
+          var spEl = document.getElementById('spline-scene');
+          if (spEl) {
+            var spObs = new IntersectionObserver(function (entries) {
+              splineVisible = entries[0].isIntersecting;
+              if (!splineVisible && sceneVisible && !aid) tick();
+            }, { threshold: 0 });
+            spObs.observe(spEl);
+          }
+        }, 100);
+        var collisionFrame = 0;
         var tick = function () {
-          if (!sceneVisible) {
+          if (!sceneVisible || splineVisible) {
             aid = null;
             return;
           }
@@ -1301,8 +1326,9 @@
             b.drz *= 0.95;
           }
 
-          // Collision on final positions — pushes displacement
-          for (var ci = 0; ci < N; ci++) {
+          // Collision on final positions — pushes displacement (every 3rd frame)
+          collisionFrame++;
+          if (collisionFrame % 3 === 0) for (var ci = 0; ci < N; ci++) {
             for (var cj = ci + 1; cj < N; cj++) {
               var a = B[ci],
                 bb = B[cj];
@@ -1533,6 +1559,7 @@
           globalMusic.play().then(function () {
             audioStarted.current = true;
             globalSoundOn = true;
+            startCrossfade();
             musicTargetVol = 0.3;
             // Unlock space audio for mobile
             spaceA.play().then(function () { spaceA.pause(); spaceA.currentTime = 0; }).catch(function () { });
@@ -1556,6 +1583,7 @@
       useEffect(() => {
         globalSoundOn = soundOn;
         if (soundOn) {
+          startCrossfade();
           if (audioStarted.current) {
             globalMusic.play().catch(function () { });
           }
