@@ -2850,8 +2850,8 @@
         });
         var aid;
         var tick = function () {
-          var cap = splineReady ? 100 : 85;
-          progress.current += (Math.min(target, cap) - progress.current) * 0.1;
+          var effectiveTarget = splineReady ? 100 : Math.min(target, 85);
+          progress.current += (effectiveTarget - progress.current) * 0.1;
           if (barRef.current) {
             barRef.current.style.width = progress.current + '%';
           }
