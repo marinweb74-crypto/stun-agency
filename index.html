@@ -1109,7 +1109,7 @@
         var pxToWorld = VH / h;
 
         // Palette: black, deep blue, dark saturated yellow-orange
-        var palette = [0x0a0a12, 0x1a2ffb, 0x1a2ffb, 0x0a0a12, 0x0a0a12, 0x1a2ffb, 0x1a2ffb, 0x0a0a12, 0x0a0a12, 0x1a2ffb, 0x1a2ffb, 0x0a0a12];
+        var palette = [0x1018c8, 0x2040ff, 0x3355ff, 0x0c14e0, 0x1828f5, 0x2a45ff, 0x1020dd, 0x2840ff, 0x0e18e8, 0x3050ff, 0x1a30f0, 0x2238ff];
 
         // Spawn 11 bodies in grid
         var N = isMobile ? 6 : 12;
@@ -1149,8 +1149,8 @@
           if (!matCache[colHex]) {
             matCache[colHex] = new THREE.MeshStandardMaterial({
               color: colHex,
-              metalness: 0.35,
-              roughness: 0.15
+              metalness: 0.45,
+              roughness: 0.12
             });
           }
           var mesh = new THREE.Mesh(sharedGeo, matCache[colHex]);
