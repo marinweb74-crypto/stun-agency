@@ -3257,6 +3257,23 @@
       var bp = useBreakpoint();
       var isMob = bp === 'mobile';
       var sectionRef = useRef(null);
+      var splineWrapRef = useRef(null);
+      var _vis = useState(false);
+      var visible = _vis[0];
+      var setVisible = _vis[1];
+
+      useEffect(function () {
+        var el = sectionRef.current;
+        if (!el) return;
+        var obs = new IntersectionObserver(function (entries) {
+          if (entries[0].isIntersecting) {
+            setVisible(true);
+            obs.disconnect();
+          }
+        }, { rootMargin: '200px' });
+        obs.observe(el);
+        return function () { obs.disconnect(); };
+      }, []);
 
       return /*#__PURE__*/React.createElement("section", {
         ref: sectionRef,
@@ -3269,13 +3286,28 @@
           background: 'inherit',
           overflow: 'hidden'
         }
+      }, /*#__PURE__*/React.createElement("div", {
+        ref: splineWrapRef,
+        style: visible ? {
+          position: 'absolute',
+          inset: 0
+        } : {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100vh',
+          opacity: 0.01,
+          pointerEvents: 'none',
+          zIndex: -1
+        }
       }, /*#__PURE__*/React.createElement("spline-viewer", {
         url: "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode",
         style: {
           width: '100%',
           height: '100%'
         }
-      }),
+      })),
 
         // DIV for removing/blocking Spline logo clicks
         React.createElement('div', {
