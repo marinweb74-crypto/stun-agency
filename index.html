@@ -3199,10 +3199,12 @@
             rafRef.current = null;
             if (v1 && !v1.paused) v1.pause();
             if (v2 && !v2.paused) v2.pause();
-            var _pb1 = play1BtnRef.current;
-            var _pb2 = play2BtnRef.current;
-            if (_pb1) _pb1.style.opacity = '1';
-            if (_pb2) _pb2.style.opacity = '1';
+            if (!isMob) {
+              var _pb1 = play1BtnRef.current;
+              var _pb2 = play2BtnRef.current;
+              if (_pb1) _pb1.style.opacity = '1';
+              if (_pb2) _pb2.style.opacity = '1';
+            }
             return;
           }
           var bounds = section.getBoundingClientRect();
@@ -3217,25 +3219,25 @@
           lerpAll(c2, getTargets(p2, d2));
           applyRect(r2, null, c2);
 
-          // Video: show when card visible, pause+reset when scrolled away
+          // Video: show when card visible
           if (v1) {
             if (c1.op > 0.6) {
               if (v1.style.opacity !== '1') v1.style.opacity = '1';
+              if (isMob && v1.paused) v1.play().catch(function(){});
             } else {
               if (v1.style.opacity !== '0') v1.style.opacity = '0';
               if (!v1.paused) v1.pause();
-              var pb1 = play1BtnRef.current;
-              if (pb1) pb1.style.opacity = '1';
+              if (!isMob) { var pb1 = play1BtnRef.current; if (pb1) pb1.style.opacity = '1'; }
             }
           }
           if (v2) {
             if (c2.op > 0.6) {
               if (v2.style.opacity !== '1') v2.style.opacity = '1';
+              if (isMob && v2.paused) v2.play().catch(function(){});
             } else {
               if (v2.style.opacity !== '0') v2.style.opacity = '0';
               if (!v2.paused) v2.pause();
-              var pb2 = play2BtnRef.current;
-              if (pb2) pb2.style.opacity = '1';
+              if (!isMob) { var pb2 = play2BtnRef.current; if (pb2) pb2.style.opacity = '1'; }
             }
           }
 
@@ -3311,9 +3313,9 @@
           overflow: 'hidden'
         }
       },
-      /*#__PURE__*/React.createElement("div", { ref: rect1Ref, style: Object.assign({}, rectStyle, { cursor: 'pointer' }), onClick: function () { togglePlay(vid1Ref, play1BtnRef); } },
-        /*#__PURE__*/React.createElement("video", { ref: vid1Ref, src: './portfolio-reel.mp4', muted: true, loop: true, playsInline: true, preload: 'metadata', style: vidStyle }),
-        /*#__PURE__*/React.createElement("div", { ref: play1BtnRef, style: playBtnStyle },
+      /*#__PURE__*/React.createElement("div", { ref: rect1Ref, style: Object.assign({}, rectStyle, isMob ? {} : { cursor: 'pointer' }), onClick: isMob ? undefined : function () { togglePlay(vid1Ref, play1BtnRef); } },
+        /*#__PURE__*/React.createElement("video", { ref: vid1Ref, src: './portfolio-reel.mp4', muted: true, loop: true, playsInline: true, preload: 'auto', style: vidStyle }),
+        !isMob && /*#__PURE__*/React.createElement("div", { ref: play1BtnRef, style: playBtnStyle },
           /*#__PURE__*/React.createElement("div", { style: playTriStyle })
         ),
         /*#__PURE__*/React.createElement("div", { style: overlayStyle },
@@ -3321,9 +3323,9 @@
           /*#__PURE__*/React.createElement("p", { style: descStyle }, "\u0421\u0430\u0439\u0442 \u0434\u043B\u044F \u043D\u0430\u0434\u0443\u0432\u043D\u044B\u0445 \u0430\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u043E\u0432 \u0432 \u041D\u044C\u044E-\u0419\u043E\u0440\u043A\u0435")
       )
       ),
-      /*#__PURE__*/React.createElement("div", { ref: rect2Ref, style: Object.assign({}, rectStyle, { cursor: 'pointer' }), onClick: function () { togglePlay(vid2Ref, play2BtnRef); } },
-        /*#__PURE__*/React.createElement("video", { ref: vid2Ref, src: './portfolio-reel-2.mp4', muted: true, loop: true, playsInline: true, preload: 'metadata', style: vidStyle }),
-        /*#__PURE__*/React.createElement("div", { ref: play2BtnRef, style: playBtnStyle },
+      /*#__PURE__*/React.createElement("div", { ref: rect2Ref, style: Object.assign({}, rectStyle, isMob ? {} : { cursor: 'pointer' }), onClick: isMob ? undefined : function () { togglePlay(vid2Ref, play2BtnRef); } },
+        /*#__PURE__*/React.createElement("video", { ref: vid2Ref, src: './portfolio-reel-2.mp4', muted: true, loop: true, playsInline: true, preload: 'auto', style: vidStyle }),
+        !isMob && /*#__PURE__*/React.createElement("div", { ref: play2BtnRef, style: playBtnStyle },
           /*#__PURE__*/React.createElement("div", { style: playTriStyle })
         ),
         /*#__PURE__*/React.createElement("div", { style: overlayStyle },
@@ -3332,8 +3334,6 @@
       )
       )));
     }
-
-    // SnakeLine removed — injected via DOM after mount (see bottom of file)
 
     // ========== SPLINE 3D SECTION ==========
     function Spotlight(props) {
