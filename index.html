@@ -2994,7 +2994,13 @@
     }) {
       var barRef = useRef(null);
       var progress = useRef(0);
+      var containerRef = useRef(null);
       useEffect(() => {
+        // Block scroll + set exact height
+        document.body.style.overflow = 'hidden';
+        if (containerRef.current) {
+          containerRef.current.style.height = window.innerHeight + 'px';
+        }
         var target = 33;
         var steps = [{
           at: 100,
@@ -3018,6 +3024,7 @@
             barRef.current.style.width = progress.current + '%';
           }
           if (progress.current > 99.5) {
+            document.body.style.overflow = '';
             setTimeout(onLoaded, 150);
             return;
           }
@@ -3025,11 +3032,13 @@
         };
         aid = requestAnimationFrame(tick);
         return function () {
+          document.body.style.overflow = '';
           timers.forEach(clearTimeout);
           if (aid) cancelAnimationFrame(aid);
         };
       }, [onLoaded]);
       return /*#__PURE__*/React.createElement("div", {
+        ref: containerRef,
         style: {
           position: 'fixed',
           top: 0,
