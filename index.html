@@ -851,7 +851,7 @@
 
         // Dramatic single-source lighting — deep contrast, glossy reflections
         scene.add(new THREE.AmbientLight(0x182040, 0.4));
-        var keyL = new THREE.DirectionalLight(0xfff5e8, 3.2);
+        var keyL = new THREE.DirectionalLight(0xfff5e8, 2.4);
         keyL.position.set(-50, 60, 40);
         scene.add(keyL);
 
@@ -1109,7 +1109,7 @@
         var pxToWorld = VH / h;
 
         // Palette: black, deep blue, dark saturated yellow-orange
-        var palette = [0x080810, 0x1a2ffb, 0x1a2ffb, 0x080810, 0x080810, 0x1a2ffb, 0x1a2ffb, 0x080810, 0x080810, 0x1a2ffb, 0x1a2ffb, 0x080810];
+        var palette = [0x0a0a12, 0x1a2ffb, 0x1a2ffb, 0x0a0a12, 0x0a0a12, 0x1a2ffb, 0x1a2ffb, 0x0a0a12, 0x0a0a12, 0x1a2ffb, 0x1a2ffb, 0x0a0a12];
 
         // Spawn 11 bodies in grid
         var N = isMobile ? 6 : 12;
@@ -1147,20 +1147,11 @@
         for (var i = 0; i < N; i++) {
           var colHex = palette[i % palette.length];
           if (!matCache[colHex]) {
-            var isBlue = colHex > 0x100000;
-            matCache[colHex] = isBlue
-              ? new THREE.MeshPhongMaterial({
-                color: 0x1a2ffb,
-                emissive: 0x1a2ffb,
-                emissiveIntensity: 0.55,
-                shininess: 80,
-                specular: 0x4444ff
-              })
-              : new THREE.MeshStandardMaterial({
-                color: 0x080810,
-                metalness: 0.75,
-                roughness: 0.03
-              });
+            matCache[colHex] = new THREE.MeshStandardMaterial({
+              color: colHex,
+              metalness: 0.35,
+              roughness: 0.15
+            });
           }
           var mesh = new THREE.Mesh(sharedGeo, matCache[colHex]);
           scene.add(mesh);
