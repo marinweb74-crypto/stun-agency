@@ -1149,11 +1149,11 @@
           if (!matCache[colHex]) {
             var isBlue = colHex > 0x100000;
             matCache[colHex] = new THREE.MeshStandardMaterial({
-              color: colHex,
-              metalness: isBlue ? 0.3 : 0.7,
-              roughness: isBlue ? 0.18 : 0.05,
-              emissive: isBlue ? 0x1a2ffb : 0x060610,
-              emissiveIntensity: isBlue ? 0.35 : 0.15
+              color: isBlue ? 0x1a2ffb : 0x080810,
+              metalness: isBlue ? 0.15 : 0.75,
+              roughness: isBlue ? 0.25 : 0.03,
+              emissive: isBlue ? 0x1a2ffb : 0x000000,
+              emissiveIntensity: isBlue ? 0.7 : 0
             });
           }
           var mesh = new THREE.Mesh(sharedGeo, matCache[colHex]);
