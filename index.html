@@ -1161,16 +1161,20 @@
           mspd = 0;
         var projVec = new THREE.Vector3();
 
-        // Base position — pure math, ZERO jitter
+        // Base position — pure math, ZERO jitter, pre-allocated arrays to avoid GC
+        var _bp = [0, 0, 0], _br = [0, 0, 0];
         var basePos = function (b, t) {
           var fi = b.ph * 3.7;
-          var bx = Math.sin(t * 0.3 + fi) * BX * 0.55 + Math.sin(t * 0.17 + fi * 2.3) * BX * 0.25;
-          var by = Math.cos(t * 0.25 + fi * 1.4) * BY * 0.5 + Math.cos(t * 0.13 + fi * 0.8) * BY * 0.2;
-          var bz = Math.sin(t * 0.2 + fi * 1.7) * 12;
-          return [bx, by, bz];
+          _bp[0] = Math.sin(t * 0.3 + fi) * BX * 0.55 + Math.sin(t * 0.17 + fi * 2.3) * BX * 0.25;
+          _bp[1] = Math.cos(t * 0.25 + fi * 1.4) * BY * 0.5 + Math.cos(t * 0.13 + fi * 0.8) * BY * 0.2;
+          _bp[2] = Math.sin(t * 0.2 + fi * 1.7) * 12;
+          return _bp;
         };
         var baseRot = function (b, t) {
-          return [b.ph + Math.sin(t * 0.15 + b.ph) * 0.5, b.ph * 2 + Math.cos(t * 0.12 + b.ph * 1.3) * 0.5, Math.sin(t * 0.09 + b.ph * 0.7) * 0.3];
+          _br[0] = b.ph + Math.sin(t * 0.15 + b.ph) * 0.5;
+          _br[1] = b.ph * 2 + Math.cos(t * 0.12 + b.ph * 1.3) * 0.5;
+          _br[2] = Math.sin(t * 0.09 + b.ph * 0.7) * 0.3;
+          return _br;
         };
         var onMove = function (e) {
           var rect = container.getBoundingClientRect();
@@ -3404,12 +3408,13 @@
         return function () { obs.disconnect(); };
       }, []);
 
-      // Force cursor:none inside spline-viewer shadow DOM
+      // Force cursor:none inside spline-viewer shadow DOM (one-shot with rAF)
       useEffect(function () {
-        if (isMob) return;
+        if (isMob || !showSpline) return;
         var el = sectionRef.current;
         if (!el) return;
-        var interval = setInterval(function () {
+        var tries = 0;
+        function tryInject() {
           var sv = el.querySelector('spline-viewer');
           if (sv && sv.shadowRoot) {
             var canvas = sv.shadowRoot.querySelector('canvas');
@@ -3419,11 +3424,12 @@
               var style = document.createElement('style');
               style.textContent = '* { cursor: none !important; }';
               sv.shadowRoot.appendChild(style);
-              clearInterval(interval);
+              return;
             }
           }
-        }, 500);
-        return function () { clearInterval(interval); };
+          if (++tries < 20) setTimeout(tryInject, 1000);
+        }
+        setTimeout(tryInject, 2000);
       }, [showSpline, isMob]);
 
       // Cursor-following button
