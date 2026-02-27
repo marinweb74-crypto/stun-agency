@@ -3753,7 +3753,7 @@
       var svg = document.createElementNS(ns, 'svg');
       svg.setAttribute('viewBox', '0 2200 1560 1900');
       svg.setAttribute('preserveAspectRatio', 'none');
-      svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;background:rgba(255,0,0,0.15);';
+      svg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;';
 
       var path = document.createElementNS(ns, 'path');
       path.setAttribute('d', SNAKE);
@@ -3762,11 +3762,37 @@
       path.setAttribute('stroke-width', '7');
       path.setAttribute('stroke-linecap', 'round');
       path.setAttribute('stroke-linejoin', 'round');
+      path.setAttribute('opacity', '0.7');
       svg.appendChild(path);
       darkWrap.appendChild(svg);
 
-      console.log('[SNAKE] SVG injected, path length:', path.getTotalLength());
-      console.log('[SNAKE] SVG dimensions:', svg.getBoundingClientRect().width, 'x', svg.getBoundingClientRect().height);
+      // Scroll-draw animation
+      var len = path.getTotalLength();
+      path.style.strokeDasharray = len;
+      path.style.strokeDashoffset = len;
+      var cur = len;
+      var visible = false;
+
+      var obs = new IntersectionObserver(function(entries) {
+        visible = entries[0].isIntersecting;
+        if (visible && !rafId) raf();
+      }, { rootMargin: '200px' });
+      obs.observe(darkWrap);
+
+      var rafId = null;
+      function raf() {
+        if (!visible) { rafId = null; return; }
+        var rect = darkWrap.getBoundingClientRect();
+        var vh = window.innerHeight;
+        var wh = darkWrap.offsetHeight;
+        var scrolled = vh - rect.top;
+        var total = wh + vh;
+        var p = Math.max(0, Math.min(1, scrolled / total));
+        var target = len * (1 - p);
+        cur += (target - cur) * 0.08;
+        path.style.strokeDashoffset = cur;
+        rafId = requestAnimationFrame(raf);
+      }
     }
 
     if (document.readyState === 'complete') {
