@@ -1539,44 +1539,26 @@
       const [menuOpen, setMenuOpen] = useState(false);
       const [soundOn, setSoundOn] = useState(true);
       const [hideNav, setHideNav] = useState(false);
-      const [onDark, setOnDark] = useState(false);
+      const logoRef = useRef(null);
       const audioStarted = useRef(false);
       useEffect(() => {
-        // Cache sections + their dark/light state (avoid querySelectorAll + getComputedStyle on scroll)
-        var cachedSections = null;
         var aboutEl = null;
-        var cacheTimer = null;
-        function buildSectionCache() {
-          var secs = document.querySelectorAll('section');
-          cachedSections = [];
-          for (var i = 0; i < secs.length; i++) {
-            var bg = window.getComputedStyle(secs[i]).backgroundColor;
-            var match = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-            var dark = true;
-            if (match) {
-              var luminosity = 0.2126 * parseInt(match[1]) + 0.7152 * parseInt(match[2]) + 0.0722 * parseInt(match[3]);
-              dark = luminosity < 128;
-            }
-            cachedSections.push({ el: secs[i], dark: dark });
-          }
+        var darkDiv = null;
+        var logo = logoRef.current;
+        var navH = isMob ? 40 : 80;
+        var cacheTimer = setTimeout(function () {
           aboutEl = document.getElementById('about');
-        }
-        // Build cache after a short delay (DOM must be ready)
-        cacheTimer = setTimeout(buildSectionCache, 500);
-        var topOffset = isMob ? 40 : 80;
+          if (aboutEl) darkDiv = aboutEl.parentElement;
+        }, 500);
+
         var onScroll = function () {
           setScrolled(window.scrollY > 50);
 
-          if (cachedSections) {
-            var isDark = true;
-            for (var i = 0; i < cachedSections.length; i++) {
-              var rect = cachedSections[i].el.getBoundingClientRect();
-              if (rect.top <= topOffset && rect.bottom >= topOffset) {
-                isDark = cachedSections[i].dark;
-                break;
-              }
-            }
-            setOnDark(isDark);
+          // Logo color: direct DOM check on every scroll tick
+          if (darkDiv && logo) {
+            var rect = darkDiv.getBoundingClientRect();
+            var isDark = rect.top <= navH && rect.bottom > navH;
+            logo.style.color = isDark ? '#F0F1FA' : '#0a0a12';
           }
 
           // Crossfade: detect About section
@@ -1594,6 +1576,7 @@
           }
         };
         var removeScroll = addScrollListener(onScroll);
+
         return function () {
           removeScroll();
           if (cacheTimer) clearTimeout(cacheTimer);
@@ -1612,13 +1595,10 @@
             globalSoundOn = true;
             startCrossfade();
             musicTargetVol = 0.3;
-            // Unlock space audio for mobile
             spaceA.play().then(function () { spaceA.pause(); spaceA.currentTime = 0; }).catch(function () { });
             spaceB.play().then(function () { spaceB.pause(); spaceB.currentTime = 0; }).catch(function () { });
           }).catch(function () { });
         };
-        // Try immediately
-        tryPlay();
         var events = ['click', 'touchstart', 'mousedown', 'keydown', 'scroll', 'wheel', 'touchmove', 'mousemove'];
         events.forEach(function (e) {
           document.addEventListener(e, tryPlay, {
@@ -1673,14 +1653,14 @@
           overflow: 'hidden'
         }
       }, /*#__PURE__*/React.createElement("div", {
+        ref: logoRef,
         style: {
           fontFamily: 'Archivo, sans-serif',
           fontWeight: 500,
           fontSize: isMob ? '1.5em' : '2em',
-          color: onDark ? '#F0F1FA' : '#0a0a12',
+          color: '#0a0a12',
           letterSpacing: '-0.03em',
-          textTransform: 'uppercase',
-          transition: 'color 0.4s ease'
+          textTransform: 'uppercase'
         }
       }, "STUN"), /*#__PURE__*/React.createElement("div", {
         style: {
@@ -3140,7 +3120,7 @@
         }
       }, /*#__PURE__*/React.createElement("video", {
         ref: videoRef,
-        src: './cat.webm',
+        src: './scroll-video.mp4',
         muted: true,
         playsInline: true,
         preload: 'auto',
@@ -3301,8 +3281,8 @@
           if (btn) btn.style.opacity = '1';
         }
       }
-      var rectW = isMob ? '92vw' : '88vw';
-      var rectH = isMob ? '55vh' : '80vh';
+      var rectW = isMob ? '92vw' : '70vw';
+      var rectH = isMob ? '55vh' : '72vh';
       var rectR = isMob ? '20px' : '28px';
       var rectStyle = {
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, margin: 'auto',
@@ -3344,7 +3324,7 @@
       };
       return /*#__PURE__*/React.createElement("section", {
         ref: sectionRef,
-        style: { position: 'relative', height: isMob ? '600vh' : '800vh', background: 'inherit', zIndex: 2, marginTop: '-5px', paddingTop: '5px' }
+        style: { position: 'relative', height: isMob ? '500vh' : '600vh', background: 'inherit', zIndex: 2, marginTop: '-5px', paddingTop: '5px' }
       }, /*#__PURE__*/React.createElement("div", {
         style: {
           position: 'sticky', top: 0, height: '100vh',
@@ -3496,7 +3476,9 @@
         var el = sectionRef.current;
         var btn = cursorBtnRef.current;
         if (!el || !btn) return;
-        var mx = 0, my = 0, cx = 0, cy = 0;
+        var initX = el.offsetWidth / 2;
+        var initY = el.offsetHeight * 0.58;
+        var mx = initX, my = initY, cx = initX, cy = initY;
         var inside = false;
         var rafId = null;
 
@@ -3517,8 +3499,8 @@
           my = e.clientY - r.top;
         }
         function tick() {
-          cx += (mx - cx) * 0.12;
-          cy += (my - cy) * 0.12;
+          cx = mx;
+          cy = my;
           btn.style.left = cx + 'px';
           btn.style.top = cy + 'px';
           rafId = requestAnimationFrame(tick);
@@ -3730,7 +3712,11 @@
             transition: 'opacity 0.3s ease, transform 0.3s ease',
             boxShadow: '0 0 30px rgba(26,47,251,0.4)'
           }
-        }, "\u041D\u0430\u043F\u0438\u0441\u0430\u0442\u044C")
+        }, /*#__PURE__*/React.createElement("svg", {
+          width: "44", height: "44", viewBox: "0 0 24 24", fill: "#fff", stroke: "none"
+        },
+          /*#__PURE__*/React.createElement("path", { d: "M5 2h14a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H8l-4 4V5a3 3 0 0 1 3-3z" })
+        ))
 
       );
     }
