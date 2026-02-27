@@ -3315,11 +3315,11 @@
           }
         },
           /*#__PURE__*/React.createElement("svg", {
-          viewBox: "0 0 1600 400",
+          viewBox: isMob ? "0 0 800 500" : "0 0 1600 400",
           style: {
             width: '100%',
             height: '100%',
-            maxWidth: '1600px'
+            maxWidth: isMob ? '100%' : '1600px'
           }
         },
             /*#__PURE__*/React.createElement("defs", null,
@@ -3330,7 +3330,18 @@
                 /*#__PURE__*/React.createElement("stop", { offset: "100%", stopColor: "#00f3ff" })
         )
         ),
-            /*#__PURE__*/React.createElement("text", {
+            isMob ? /*#__PURE__*/React.createElement("text", {
+          textAnchor: "middle",
+          className: "outline-text-reveal",
+          style: {
+            fontFamily: "'Unbounded', 'Archivo', sans-serif",
+            fontWeight: 800,
+            fontSize: '180px',
+            letterSpacing: '-0.02em',
+            userSelect: 'none'
+          }
+        }, /*#__PURE__*/React.createElement("tspan", { x: "50%", dy: "200" }, "LET'S"), /*#__PURE__*/React.createElement("tspan", { x: "50%", dy: "180" }, "WORK"))
+            : /*#__PURE__*/React.createElement("text", {
           x: "50%",
           y: "50%",
           textAnchor: "middle",
