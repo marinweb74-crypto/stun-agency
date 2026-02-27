@@ -754,6 +754,8 @@
     }
 
     var _cachedEnvRT = null;
+    var _splineVisible = false;
+    var _onSplineChange = null;
 
     // ========== SINGLE SCROLL DISPATCHER ==========
     var _scrollListeners = [];
@@ -1292,26 +1294,18 @@
           aid,
           frameCount = 0;
         var sceneVisible = true;
-        var splineVisible = false;
         var visObs = new IntersectionObserver(function (entries) {
           sceneVisible = entries[0].isIntersecting;
-          if (sceneVisible && !splineVisible && !aid) tick();
+          if (sceneVisible && !_splineVisible && !aid) tick();
         }, {
           threshold: 0
         });
         visObs.observe(container);
-        setTimeout(function () {
-          var spEl = document.getElementById('spline-scene');
-          if (spEl) {
-            var spObs = new IntersectionObserver(function (entries) {
-              splineVisible = entries[0].isIntersecting;
-              if (!splineVisible && sceneVisible && !aid) tick();
-            }, { threshold: 0 });
-            spObs.observe(spEl);
-          }
-        }, 100);
+        _onSplineChange = function () {
+          if (!_splineVisible && sceneVisible && !aid) tick();
+        };
         var tick = function () {
-          if (!sceneVisible || splineVisible) {
+          if (!sceneVisible || _splineVisible) {
             aid = null;
             return;
           }
@@ -3416,19 +3410,46 @@
       var isMob = bp === 'mobile';
       var sectionRef = useRef(null);
       var cursorBtnRef = useRef(null);
-      var _vis = useState(false);
-      var showSpline = _vis[0];
-      var setShowSpline = _vis[1];
+      var splineElRef = useRef(null);
+      var splineLoaded = useRef(false);
 
       useEffect(function () {
         var el = sectionRef.current;
         if (!el) return;
+
+        function loadSpline() {
+          if (splineLoaded.current) {
+            // Already loaded — just show it
+            if (splineElRef.current) splineElRef.current.style.display = '';
+            return;
+          }
+          var cb = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback : setTimeout;
+          cb(function () {
+            var sv = document.createElement('spline-viewer');
+            sv.setAttribute('url', 'https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode');
+            sv.style.width = '100%';
+            sv.style.height = '100%';
+            sv.style.position = 'absolute';
+            sv.style.top = '0';
+            sv.style.left = '0';
+            el.insertBefore(sv, el.firstChild);
+            splineElRef.current = sv;
+            splineLoaded.current = true;
+          });
+        }
+
         var obs = new IntersectionObserver(function (entries) {
           if (entries[0].isIntersecting) {
-            setShowSpline(true);
-            obs.disconnect();
+            // Entering: stop Three.js first, then load Spline
+            _splineVisible = true;
+            loadSpline();
+          } else {
+            // Leaving: hide Spline, resume Three.js
+            _splineVisible = false;
+            if (splineElRef.current) splineElRef.current.style.display = 'none';
+            if (_onSplineChange) _onSplineChange();
           }
-        }, { rootMargin: '1500px' });
+        }, { rootMargin: '300px' });
         obs.observe(el);
         return function () { obs.disconnect(); };
       }, []);
@@ -3495,14 +3516,7 @@
           contentVisibility: 'auto',
           containIntrinsicSize: '0 100vh'
         }
-      }, showSpline && /*#__PURE__*/React.createElement("spline-viewer", {
-        url: "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode",
-        style: {
-          width: '100%',
-          height: '100%'
-        }
-      }),
-
+      },
         // DIV for removing/blocking Spline logo clicks
         React.createElement('div', {
           style: {
