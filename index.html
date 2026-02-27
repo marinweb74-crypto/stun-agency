@@ -2996,11 +2996,8 @@
       var progress = useRef(0);
       var containerRef = useRef(null);
       useEffect(() => {
-        // Block scroll + set exact height
+        // Block scroll during loading
         document.body.style.overflow = 'hidden';
-        if (containerRef.current) {
-          containerRef.current.style.height = (window.innerHeight + 140) + 'px';
-        }
         var target = 33;
         var steps = [{
           at: 100,
@@ -3041,11 +3038,10 @@
         ref: containerRef,
         style: {
           position: 'fixed',
-          top: 0,
+          top: '-100px',
           left: 0,
-          width: '100vw',
-          height: '100vh',
-          minHeight: '-webkit-fill-available',
+          right: 0,
+          bottom: '-100px',
           zIndex: 100000,
           background: '#0a0a0a',
           display: 'flex',
