@@ -3379,6 +3379,7 @@
       var bp = useBreakpoint();
       var isMob = bp === 'mobile';
       var sectionRef = useRef(null);
+      var cursorBtnRef = useRef(null);
       var _vis = useState(false);
       var showSpline = _vis[0];
       var setShowSpline = _vis[1];
@@ -3395,6 +3396,55 @@
         obs.observe(el);
         return function () { obs.disconnect(); };
       }, []);
+
+      // Cursor-following button
+      useEffect(function () {
+        if (isMob) return;
+        var el = sectionRef.current;
+        var btn = cursorBtnRef.current;
+        if (!el || !btn) return;
+        var mx = 0, my = 0, cx = 0, cy = 0;
+        var inside = false;
+        var rafId = null;
+
+        function onEnter() {
+          inside = true;
+          btn.style.opacity = '1';
+          btn.style.transform = 'translate(-50%,-50%) scale(1)';
+          if (!rafId) tick();
+        }
+        function onLeave() {
+          inside = false;
+          btn.style.opacity = '0';
+          btn.style.transform = 'translate(-50%,-50%) scale(0.5)';
+        }
+        function onMove(e) {
+          var r = el.getBoundingClientRect();
+          mx = e.clientX - r.left;
+          my = e.clientY - r.top;
+        }
+        function tick() {
+          cx += (mx - cx) * 0.12;
+          cy += (my - cy) * 0.12;
+          btn.style.left = cx + 'px';
+          btn.style.top = cy + 'px';
+          rafId = requestAnimationFrame(tick);
+          if (!inside && Math.abs(mx - cx) < 0.5 && Math.abs(my - cy) < 0.5) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+          }
+        }
+
+        el.addEventListener('mouseenter', onEnter);
+        el.addEventListener('mouseleave', onLeave);
+        el.addEventListener('mousemove', onMove);
+        return function () {
+          el.removeEventListener('mouseenter', onEnter);
+          el.removeEventListener('mouseleave', onLeave);
+          el.removeEventListener('mousemove', onMove);
+          if (rafId) cancelAnimationFrame(rafId);
+        };
+      }, [isMob]);
 
       return /*#__PURE__*/React.createElement("section", {
         ref: sectionRef,
@@ -3552,7 +3602,40 @@
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent'
           }
-        }, "Email")))
+        }, "Email"))),
+
+        !isMob && /*#__PURE__*/React.createElement("a", {
+          ref: cursorBtnRef,
+          href: "https://t.me/",
+          target: "_blank",
+          rel: "noopener noreferrer",
+          style: {
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            opacity: 0,
+            transform: 'translate(-50%,-50%) scale(0.5)',
+            width: '120px',
+            height: '120px',
+            borderRadius: '50%',
+            background: '#1a2ffb',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontFamily: 'Archivo, sans-serif',
+            fontSize: '14px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            textDecoration: 'none',
+            zIndex: 20,
+            pointerEvents: 'auto',
+            transition: 'opacity 0.3s ease, transform 0.3s ease',
+            cursor: 'pointer',
+            boxShadow: '0 0 30px rgba(26,47,251,0.4)'
+          }
+        }, "\u0421\u0432\u044F\u0437\u0430\u0442\u044C\u0441\u044F")
 
       );
     }
