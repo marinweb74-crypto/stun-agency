@@ -851,7 +851,7 @@
 
         // Dramatic single-source lighting — deep contrast, glossy reflections
         scene.add(new THREE.AmbientLight(0x182040, 0.4));
-        var keyL = new THREE.DirectionalLight(0xfff5e8, 2.4);
+        var keyL = new THREE.DirectionalLight(0xfff5e8, 3.2);
         keyL.position.set(-50, 60, 40);
         scene.add(keyL);
 
@@ -1147,10 +1147,13 @@
         for (var i = 0; i < N; i++) {
           var colHex = palette[i % palette.length];
           if (!matCache[colHex]) {
+            var isBlue = colHex > 0x100000;
             matCache[colHex] = new THREE.MeshStandardMaterial({
               color: colHex,
-              metalness: 0.55,
-              roughness: 0.08
+              metalness: isBlue ? 0.4 : 0.7,
+              roughness: isBlue ? 0.12 : 0.05,
+              emissive: isBlue ? 0x0a18aa : 0x060610,
+              emissiveIntensity: isBlue ? 0.4 : 0.15
             });
           }
           var mesh = new THREE.Mesh(sharedGeo, matCache[colHex]);
