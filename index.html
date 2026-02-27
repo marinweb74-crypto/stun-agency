@@ -741,7 +741,7 @@
       } catch (e) { }
       _deviceCap = {
         tier: tier,
-        pixelRatio: Math.min(window.devicePixelRatio, 1.5),
+        pixelRatio: Math.min(window.devicePixelRatio, 2),
         postProcessing: tier !== 'low'
       };
       return _deviceCap;
@@ -1553,6 +1553,12 @@
 
         var onScroll = function () {
           setScrolled(window.scrollY > 50);
+
+          // Lazy lookup if not found yet
+          if (!aboutEl) {
+            aboutEl = document.getElementById('about');
+            if (aboutEl) darkDiv = aboutEl.parentElement;
+          }
 
           // Logo color: direct DOM check on every scroll tick
           if (darkDiv && logo) {
