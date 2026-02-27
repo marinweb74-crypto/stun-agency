@@ -352,6 +352,13 @@
       color: #f0f1fa;
     }
 
+    #spline-scene, #spline-scene *, #spline-scene spline-viewer {
+      cursor: none !important;
+    }
+    #spline-scene spline-viewer canvas {
+      cursor: none !important;
+    }
+
     /* Sound wave animation */
     @keyframes waveShift {
       0% {
@@ -3397,6 +3404,28 @@
         return function () { obs.disconnect(); };
       }, []);
 
+      // Force cursor:none inside spline-viewer shadow DOM
+      useEffect(function () {
+        if (isMob) return;
+        var el = sectionRef.current;
+        if (!el) return;
+        var interval = setInterval(function () {
+          var sv = el.querySelector('spline-viewer');
+          if (sv && sv.shadowRoot) {
+            var canvas = sv.shadowRoot.querySelector('canvas');
+            if (canvas) {
+              canvas.style.cursor = 'none';
+              sv.shadowRoot.host.style.cursor = 'none';
+              var style = document.createElement('style');
+              style.textContent = '* { cursor: none !important; }';
+              sv.shadowRoot.appendChild(style);
+              clearInterval(interval);
+            }
+          }
+        }, 500);
+        return function () { clearInterval(interval); };
+      }, [showSpline, isMob]);
+
       // Cursor-following button
       useEffect(function () {
         if (isMob) return;
@@ -3464,7 +3493,8 @@
         url: "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode",
         style: {
           width: '100%',
-          height: '100%'
+          height: '100%',
+          cursor: 'none'
         }
       }),
 
