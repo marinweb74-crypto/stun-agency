@@ -1436,6 +1436,9 @@
             audioStarted.current = true;
             globalSoundOn = true;
             musicTargetVol = 0.3;
+            // Unlock space audio for mobile
+            spaceA.play().then(function () { spaceA.pause(); spaceA.currentTime = 0; }).catch(function () { });
+            spaceB.play().then(function () { spaceB.pause(); spaceB.currentTime = 0; }).catch(function () { });
           }).catch(function () { });
         };
         // Try immediately
@@ -3240,6 +3243,24 @@
       var bp = useBreakpoint();
       var isMob = bp === 'mobile';
       var sectionRef = useRef(null);
+      var splineLoaded = useRef(false);
+      var _st = useState(false);
+      var showSpline = _st[0];
+      var setShowSpline = _st[1];
+
+      useEffect(function () {
+        var el = sectionRef.current;
+        if (!el || splineLoaded.current) return;
+        var obs = new IntersectionObserver(function (entries) {
+          if (entries[0].isIntersecting) {
+            splineLoaded.current = true;
+            setShowSpline(true);
+            obs.disconnect();
+          }
+        }, { rootMargin: '200px' });
+        obs.observe(el);
+        return function () { obs.disconnect(); };
+      }, []);
 
       return /*#__PURE__*/React.createElement("section", {
         ref: sectionRef,
@@ -3252,7 +3273,7 @@
           background: 'inherit',
           overflow: 'hidden'
         }
-      }, /*#__PURE__*/React.createElement("spline-viewer", {
+      }, showSpline && /*#__PURE__*/React.createElement("spline-viewer", {
         url: "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode",
         style: {
           width: '100%',
