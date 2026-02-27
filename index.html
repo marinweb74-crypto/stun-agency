@@ -808,7 +808,7 @@
         var devCap = detectDeviceCapability();
         var renderer = new THREE.WebGLRenderer({
           canvas: canvas,
-          antialias: devCap.tier !== 'low',
+          antialias: true,
           alpha: false,
           powerPreference: 'high-performance',
           stencil: false,
@@ -1026,7 +1026,7 @@
             }
             return [gx, gy, gz];
           };
-          var R = isMobile ? 150 : 280,
+          var R = isMobile ? 200 : 280,
             ext = halfLen + rr * 1.5,
             st = 2 * ext / R,
             SS = R + 1;
