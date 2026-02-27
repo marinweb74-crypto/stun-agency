@@ -1266,7 +1266,6 @@
             spObs.observe(spEl);
           }
         }, 100);
-        var collisionFrame = 0;
         var tick = function () {
           if (!sceneVisible || splineVisible) {
             aid = null;
@@ -1335,9 +1334,8 @@
             b.drz *= 0.95;
           }
 
-          // Collision on final positions — pushes displacement (every 3rd frame)
-          collisionFrame++;
-          if (collisionFrame % 3 === 0) for (var ci = 0; ci < N; ci++) {
+          // Collision on final positions — pushes displacement
+          for (var ci = 0; ci < N; ci++) {
             for (var cj = ci + 1; cj < N; cj++) {
               var a = B[ci],
                 bb = B[cj];
