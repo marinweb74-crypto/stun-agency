@@ -755,14 +755,23 @@
 
     var _cachedEnvRT = null;
 
-    // ========== SCROLL THROTTLE UTILITY ==========
-    function throttledScroll(fn) {
-      var last = 0;
+    // ========== SINGLE SCROLL DISPATCHER ==========
+    var _scrollListeners = [];
+    var _lastScrollDispatch = 0;
+    function _onGlobalScroll() {
+      var now = performance.now();
+      if (now - _lastScrollDispatch < 16) return;
+      _lastScrollDispatch = now;
+      for (var i = 0; i < _scrollListeners.length; i++) {
+        _scrollListeners[i]();
+      }
+    }
+    window.addEventListener('scroll', _onGlobalScroll, { passive: true });
+    function addScrollListener(fn) {
+      _scrollListeners.push(fn);
       return function () {
-        var now = performance.now();
-        if (now - last < 33) return;
-        last = now;
-        fn();
+        var idx = _scrollListeners.indexOf(fn);
+        if (idx >= 0) _scrollListeners.splice(idx, 1);
       };
     }
 
@@ -1539,12 +1548,9 @@
             }
           }
         };
-        var throttledOnScroll = throttledScroll(onScroll);
-        window.addEventListener('scroll', throttledOnScroll, {
-          passive: true
-        });
+        var removeScroll = addScrollListener(onScroll);
         return function () {
-          window.removeEventListener('scroll', throttledOnScroll);
+          removeScroll();
           if (cacheTimer) clearTimeout(cacheTimer);
         };
       }, []);
@@ -1957,10 +1963,7 @@
             if (total <= 0) return;
             scrollPRef.current = Math.max(0, Math.min(1, -rect.top / total));
           };
-          var throttledOnScroll = throttledScroll(onScroll);
-          window.addEventListener('scroll', throttledOnScroll, {
-            passive: true
-          });
+          var removeScroll = addScrollListener(onScroll);
 
           var aboutVisible = false;
           var aboutObs = new IntersectionObserver(function (entries) {
@@ -2008,7 +2011,7 @@
         if (statsRef.current[0]) statsObs.observe(statsRef.current[0]);
         return function () {
           if (!isMob) {
-            window.removeEventListener('scroll', throttledOnScroll);
+            removeScroll();
             if (animRef.current) cancelAnimationFrame(animRef.current);
             if (aboutObs) aboutObs.disconnect();
           }
@@ -2200,10 +2203,7 @@
           if (total <= 0) return;
           scrollPRef.current = Math.max(0, Math.min(1, -rect.top / total));
         };
-        var throttledOnScroll = throttledScroll(onScroll);
-        window.addEventListener('scroll', throttledOnScroll, {
-          passive: true
-        });
+        var removeScroll = addScrollListener(onScroll);
 
         var observer = { disconnect: function () { } };
         var t0 = performance.now();
@@ -2329,7 +2329,7 @@
         if (expertiseRef.current) expObs.observe(expertiseRef.current);
 
         return function () {
-          window.removeEventListener('scroll', throttledOnScroll);
+          removeScroll();
           if (animRef.current) cancelAnimationFrame(animRef.current);
           observer.disconnect();
           expObs.disconnect();
@@ -2950,13 +2950,10 @@
             textRef.current.style.transform = 'translateY(' + scrollY * pf + 'px)';
           }
         };
-        var throttledOnScroll = throttledScroll(onScroll);
-        window.addEventListener('scroll', throttledOnScroll, {
-          passive: true
-        });
+        var removeScroll = addScrollListener(onScroll);
         onScroll();
         return function () {
-          window.removeEventListener('scroll', throttledOnScroll);
+          removeScroll();
         };
       }, []);
     }
@@ -3041,86 +3038,31 @@
       })));
     }
 
-    // ========== GIF with CHROMA KEY + SCROLL ==========
+    // ========== SCROLL-DRIVEN VIDEO (WebM with alpha) ==========
     function ScrollVideo() {
-      var canvasRef = useRef(null);
+      var videoRef = useRef(null);
       var sectionRef = useRef(null);
-      var framesRef = useRef([]);
-      var lastIdx = useRef(-1);
       useEffect(function () {
-        var canvas = canvasRef.current;
-        if (!canvas) return;
-        var ctx = canvas.getContext('2d', {
-          willReadFrequently: true
-        });
+        var video = videoRef.current;
+        if (!video) return;
         var rafId = null;
+        var ready = false;
 
-        // Step 1: Parse GIF frames properly using gifuct-js
-        Promise.all([
-          fetch('./cat.gif').then(function (r) { return r.arrayBuffer(); }),
-          import('https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/+esm')
-        ]).then(function (results) {
-          var buffer = results[0];
-          var gifuct = results[1];
-          var gif = gifuct.parseGIF(buffer);
-          var rawFrames = gifuct.decompressFrames(gif, true);
-          if (rawFrames.length === 0) return;
+        video.addEventListener('loadedmetadata', function () {
+          ready = true;
+        });
 
-          var gw = rawFrames[0].dims.width;
-          var gh = rawFrames[0].dims.height;
-          canvas.width = gw;
-          canvas.height = gh;
-
-          // Composite each frame and apply chroma key
-          var tempCanvas = document.createElement('canvas');
-          tempCanvas.width = gw;
-          tempCanvas.height = gh;
-          var tempCtx = tempCanvas.getContext('2d');
-          var frames = [];
-
-          rawFrames.forEach(function (frame) {
-            if (frame.disposalType === 2) {
-              tempCtx.clearRect(0, 0, gw, gh);
-            }
-            var patchData = new ImageData(
-              new Uint8ClampedArray(frame.patch),
-              frame.dims.width,
-              frame.dims.height
-            );
-            tempCtx.putImageData(patchData, frame.dims.left, frame.dims.top);
-            var fullFrame = tempCtx.getImageData(0, 0, gw, gh);
-
-            // Chroma key: remove green
-            var d = fullFrame.data;
-            for (var i = 0; i < d.length; i += 4) {
-              var r = d[i], g = d[i + 1], b = d[i + 2];
-              if (g > 60 && g > r * 1.2 && g > b * 1.2) {
-                d[i + 3] = 0;
-              }
-            }
-            frames.push(fullFrame);
-          });
-
-          framesRef.current = frames;
-          if (frames.length > 0) {
-            ctx.putImageData(frames[0], 0, 0);
-          }
-        }).catch(function () { });
-
-        // Step 2: scroll-driven frame display
         function tick() {
-          var f = framesRef.current;
-          if (f.length > 0) {
+          if (ready && video.duration) {
             var section = sectionRef.current;
             if (section) {
               var rect = section.getBoundingClientRect();
               var total = section.offsetHeight - window.innerHeight;
               if (total > 0) {
                 var p = Math.max(0, Math.min(1, -rect.top / total));
-                var idx = Math.min(f.length - 1, Math.floor(p * f.length));
-                if (idx !== lastIdx.current) {
-                  lastIdx.current = idx;
-                  ctx.putImageData(f[idx], 0, 0);
+                var targetTime = p * video.duration;
+                if (Math.abs(video.currentTime - targetTime) > 0.05) {
+                  video.currentTime = targetTime;
                 }
               }
             }
@@ -3129,7 +3071,6 @@
         }
         rafId = requestAnimationFrame(tick);
 
-        // Cleanup
         return function () {
           if (rafId) cancelAnimationFrame(rafId);
         };
@@ -3152,8 +3093,12 @@
           alignItems: 'center',
           justifyContent: 'center'
         }
-      }, /*#__PURE__*/React.createElement("canvas", {
-        ref: canvasRef,
+      }, /*#__PURE__*/React.createElement("video", {
+        ref: videoRef,
+        src: './cat.webm',
+        muted: true,
+        playsInline: true,
+        preload: 'auto',
         style: {
           maxWidth: '60%',
           maxHeight: '70vh'
