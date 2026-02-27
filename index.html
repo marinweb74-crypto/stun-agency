@@ -1148,13 +1148,19 @@
           var colHex = palette[i % palette.length];
           if (!matCache[colHex]) {
             var isBlue = colHex > 0x100000;
-            matCache[colHex] = new THREE.MeshStandardMaterial({
-              color: isBlue ? 0x1a2ffb : 0x080810,
-              metalness: isBlue ? 0.2 : 0.75,
-              roughness: isBlue ? 0.3 : 0.03,
-              emissive: isBlue ? 0x0d1a7d : 0x000000,
-              emissiveIntensity: isBlue ? 0.25 : 0
-            });
+            matCache[colHex] = isBlue
+              ? new THREE.MeshPhongMaterial({
+                color: 0x1a2ffb,
+                emissive: 0x1a2ffb,
+                emissiveIntensity: 0.55,
+                shininess: 80,
+                specular: 0x4444ff
+              })
+              : new THREE.MeshStandardMaterial({
+                color: 0x080810,
+                metalness: 0.75,
+                roughness: 0.03
+              });
           }
           var mesh = new THREE.Mesh(sharedGeo, matCache[colHex]);
           scene.add(mesh);
