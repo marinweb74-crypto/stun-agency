@@ -2221,8 +2221,8 @@
             var stickyTop = -(contentH - vh);
             stickyWrap.style.position = 'sticky';
             stickyWrap.style.top = stickyTop + 'px';
-            // Set section height so there's scroll room for the overlap
-            section.style.height = contentH + vh + 'px';
+            // Set section height so there's scroll room for the overlap + extra buffer for last card visibility
+            section.style.height = contentH + vh * 1.8 + 'px';
           }
           return function () {
             flipObs.disconnect();
@@ -2423,9 +2423,9 @@
       }, "EXPERTISE")), /*#__PURE__*/React.createElement("div", {
         ref: descRef,
         style: {
-          position: 'absolute',
-          top: isMob ? '100%' : '0',
-          marginTop: isMob ? '16px' : '0',
+          position: isMob ? 'relative' : 'absolute',
+          top: isMob ? 'auto' : '0',
+          marginTop: isMob ? '20px' : '0',
           bottom: 'auto',
           right: isMob ? 'auto' : 'calc(100% - 83vw)',
           left: isMob ? '0' : 'auto',
@@ -2460,7 +2460,7 @@
           flexDirection: 'column',
           gap: isMob ? '40px' : '0',
           marginLeft: isMob ? '4vw' : '0',
-          marginTop: isMob ? '20px' : '0',
+          marginTop: isMob ? '60px' : '0',
           perspective: 'none'
         }
       }, services.map(function (s, i) {
