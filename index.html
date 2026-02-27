@@ -2826,11 +2826,14 @@
       var progress = useRef(0);
       useEffect(() => {
         var splineReady = false;
+        var markReady = function () { splineReady = true; };
         // Download Spline scene during loading screen
         fetch('https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode')
           .then(function (r) { return r.arrayBuffer(); })
-          .then(function () { splineReady = true; })
-          .catch(function () { splineReady = true; });
+          .then(markReady)
+          .catch(markReady);
+        // Safety timeout — don't block forever
+        var safetyTimer = setTimeout(markReady, 8000);
 
         var target = 33;
         var steps = [{
@@ -2860,6 +2863,7 @@
         };
         aid = requestAnimationFrame(tick);
         return function () {
+          clearTimeout(safetyTimer);
           timers.forEach(clearTimeout);
           if (aid) cancelAnimationFrame(aid);
         };
