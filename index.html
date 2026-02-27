@@ -837,10 +837,54 @@
               },
               uTime: {
                 value: 0.0
+              },
+              uResolution: {
+                value: new THREE.Vector2(w * dpr * rtScale, h * dpr * rtScale)
               }
             },
-            vertexShader: ['varying vec2 vUv;', 'void main() { vUv = uv; gl_Position = vec4(position, 1.0); }'].join('\n'),
-            fragmentShader: ['uniform sampler2D uTexture;', 'uniform vec2 uMouse;', 'uniform float uVelocity;', 'uniform float uRadius;', 'uniform float uTime;', 'varying vec2 vUv;', 'void main() {', '  vec2 uv = vUv;', '  vec2 toMouse = uv - uMouse;', '  float dist = length(toMouse);', '  float t = smoothstep(uRadius, 0.0, dist);', '  float strength = t * (0.15 + uVelocity * 0.6);', '  vec2 dir = dist > 0.001 ? normalize(toMouse) : vec2(0.0);', '  vec2 distorted = uv + dir * strength * 0.06;', '  gl_FragColor = texture2D(uTexture, distorted);', '}'].join('\n')
+            vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }',
+            fragmentShader: [
+              'uniform sampler2D uTexture;',
+              'uniform vec2 uMouse;',
+              'uniform float uVelocity;',
+              'uniform float uRadius;',
+              'uniform float uTime;',
+              'uniform vec2 uResolution;',
+              'varying vec2 vUv;',
+              'vec4 fxaa(sampler2D tex, vec2 uv, vec2 rcpRes) {',
+              '  vec3 rgbNW = texture2D(tex, uv + vec2(-1.0, -1.0) * rcpRes).rgb;',
+              '  vec3 rgbNE = texture2D(tex, uv + vec2( 1.0, -1.0) * rcpRes).rgb;',
+              '  vec3 rgbSW = texture2D(tex, uv + vec2(-1.0,  1.0) * rcpRes).rgb;',
+              '  vec3 rgbSE = texture2D(tex, uv + vec2( 1.0,  1.0) * rcpRes).rgb;',
+              '  vec4 rgbM  = texture2D(tex, uv);',
+              '  vec3 luma = vec3(0.299, 0.587, 0.114);',
+              '  float lumaNW = dot(rgbNW, luma);',
+              '  float lumaNE = dot(rgbNE, luma);',
+              '  float lumaSW = dot(rgbSW, luma);',
+              '  float lumaSE = dot(rgbSE, luma);',
+              '  float lumaM  = dot(rgbM.rgb, luma);',
+              '  float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));',
+              '  float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));',
+              '  vec2 dir = vec2(-(lumaNW + lumaNE) + (lumaSW + lumaSE), (lumaNW + lumaSW) - (lumaNE + lumaSE));',
+              '  float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * 0.03125, 1.0/128.0);',
+              '  float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);',
+              '  dir = clamp(dir * rcpDirMin, vec2(-8.0), vec2(8.0)) * rcpRes;',
+              '  vec4 rgbA = 0.5 * (texture2D(tex, uv + dir * (1.0/3.0 - 0.5)) + texture2D(tex, uv + dir * (2.0/3.0 - 0.5)));',
+              '  vec4 rgbB = rgbA * 0.5 + 0.25 * (texture2D(tex, uv + dir * -0.5) + texture2D(tex, uv + dir * 0.5));',
+              '  float lumaB = dot(rgbB.rgb, luma);',
+              '  return (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;',
+              '}',
+              'void main() {',
+              '  vec2 uv = vUv;',
+              '  vec2 toMouse = uv - uMouse;',
+              '  float dist = length(toMouse);',
+              '  float t = smoothstep(uRadius, 0.0, dist);',
+              '  float strength = t * (0.15 + uVelocity * 0.6);',
+              '  vec2 dir2 = dist > 0.001 ? normalize(toMouse) : vec2(0.0);',
+              '  vec2 distorted = uv + dir2 * strength * 0.06;',
+              '  gl_FragColor = fxaa(uTexture, distorted, 1.0 / uResolution);',
+              '}'
+            ].join('\n')
           });
           postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat);
           postScene.add(postQuad);
@@ -1426,8 +1470,8 @@
           renderer.setSize(w, h);
           if (usePostProcessing) {
             var d = devCap.pixelRatio;
-            var rtS = 1.0;
-            rt.setSize(w * d * rtS, h * d * rtS);
+            rt.setSize(w * d * rtScale, h * d * rtScale);
+            postMat.uniforms.uResolution.value.set(w * d * rtScale, h * d * rtScale);
           }
           VH = 2 * Math.tan(fov2) * 80;
           VW = VH * (w / h);
