@@ -3426,50 +3426,49 @@
         var container = splineContainerRef.current;
         if (!el || !container) return;
 
-        var iframeCreated = false;
+        var splineLoaded = false;
 
         var obs = new IntersectionObserver(function (entries) {
-          if (entries[0].isIntersecting && !iframeCreated) {
-            iframeCreated = true;
-
-            // Stop Three.js BEFORE loading Spline
-            _splineVisible = true;
+          if (entries[0].isIntersecting && !splineLoaded) {
+            splineLoaded = true;
+            // НЕ ставим _splineVisible = true здесь!
+            // Three.js продолжает работать
 
             var doLoad = function () {
-              var iframe = document.createElement('iframe');
-              iframe.id = 'spline-frame';
-              iframe.style.cssText = [
+              var viewer = document.createElement('spline-viewer');
+              viewer.setAttribute('url', 'https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode');
+              viewer.style.cssText = [
                 'width:100%',
                 'height:100%',
-                'border:none',
-                'opacity:0',
-                'transition:opacity 0.8s ease',
                 'position:absolute',
-                'inset:0'
+                'inset:0',
+                'opacity:0',
+                'transition:opacity 0.8s ease'
               ].join(';');
 
-              iframe.srcdoc = [
-                '<!DOCTYPE html>',
-                '<html><head>',
-                '<style>body{margin:0;overflow:hidden;background:#0a0a0a}<\/style>',
-                '<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"><\/script>',
-                '</head><body>',
-                '<spline-viewer url="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"',
-                ' style="width:100%;height:100%"></spline-viewer>',
-                '</body></html>'
-              ].join('');
+              container.appendChild(viewer);
 
-              iframe.onload = function () {
-                // Give Spline time to initialize inside iframe
-                setTimeout(function () {
-                  iframe.style.opacity = '1';
-                }, 800);
+              // Wait for Spline to render first frame
+              // spline-viewer has no ready event, so check for canvas in shadow DOM
+              var attempts = 0;
+              var checkReady = function () {
+                attempts++;
+                var shadow = viewer.shadowRoot;
+                var canvas = shadow && shadow.querySelector('canvas');
+                if ((canvas && canvas.width > 0) || attempts > 25) {
+                  // 25 * 200ms = 5 sec max wait
+                  viewer.style.opacity = '1';
+                  // Stop Three.js AFTER robot appears
+                  setTimeout(function () {
+                    _splineVisible = true;
+                  }, 800); // after opacity transition completes
+                } else {
+                  setTimeout(checkReady, 200);
+                }
               };
-
-              container.appendChild(iframe);
+              setTimeout(checkReady, 1000); // start checking after 1 sec
             };
 
-            // Insert when main thread is free
             if ('requestIdleCallback' in window) {
               requestIdleCallback(doLoad, { timeout: 3000 });
             } else {
@@ -3477,13 +3476,11 @@
             }
           }
 
-          // Show/hide iframe on enter/leave
-          var frame = document.getElementById('spline-frame');
-          if (frame) {
-            frame.style.display = entries[0].isIntersecting ? 'block' : 'none';
+          // Bidirectional observer for pause/resume
+          if (!entries[0].isIntersecting && splineLoaded) {
+            _splineVisible = false;
+            if (_onSplineChange) _onSplineChange(); // resume Three.js
           }
-          _splineVisible = entries[0].isIntersecting;
-          if (!entries[0].isIntersecting && _onSplineChange) _onSplineChange();
         }, { rootMargin: '300px' });
 
         obs.observe(el);
@@ -3556,7 +3553,7 @@
           containIntrinsicSize: '0 100vh'
         }
       },
-        // Container for Spline iframe
+        // Container for Spline viewer
         React.createElement('div', {
           ref: splineContainerRef,
           style: {
@@ -3917,6 +3914,7 @@
     }
     ReactDOM.createRoot(document.getElementById('root')).render(/*#__PURE__*/React.createElement(App, null));
   </script>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
 
 </body>
 
