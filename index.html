@@ -469,13 +469,16 @@
     globalMusic.loop = true;
     globalMusic.volume = 0.3;
     globalMusic.preload = 'auto';
-    // Dual-buffer seamless loop for space track
+    // Dual-buffer seamless loop for space track (mobile uses simple loop)
     var spaceA = new Audio('./space.mp3');
     var spaceB = new Audio('./space.mp3');
     spaceA.volume = 0;
     spaceB.volume = 0;
     spaceA.preload = 'auto';
     spaceB.preload = 'auto';
+    if (isMobile) {
+      spaceA.loop = true; // Simple native loop on mobile — dual-buffer play() fails without gesture
+    }
     var spaceCurrent = spaceA;
     var spaceNext = spaceB;
     var spaceDuration = 12; // ~12 seconds
@@ -517,8 +520,11 @@
         spaceCurrentVol = Math.max(0, Math.min(1, spaceCurrentVol));
       }
 
-      // Dual buffer crossfade logic
-      if (spaceStarted && spaceCurrent.duration) {
+      // Dual buffer crossfade logic (desktop only — mobile uses native loop)
+      if (spaceStarted && isMobile) {
+        // Mobile: simple volume control, native loop handles repeat
+        spaceA.volume = spaceCurrentVol;
+      } else if (spaceStarted && spaceCurrent.duration) {
         var timeLeft = spaceCurrent.duration - spaceCurrent.currentTime;
         if (timeLeft < spaceCrossfade && spaceNext.paused) {
           // Start next buffer
@@ -1600,16 +1606,32 @@
           if (audioCtx && audioCtx.state === 'suspended') {
             audioCtx.resume();
           }
+          // Prime space buffers SYNCHRONOUSLY in the gesture (before .then)
+          spaceA.play().then(function () { spaceA.pause(); spaceA.currentTime = 0; }).catch(function () { });
+          spaceB.play().then(function () { spaceB.pause(); spaceB.currentTime = 0; }).catch(function () { });
           globalMusic.play().then(function () {
             audioStarted.current = true;
             globalSoundOn = true;
             startCrossfade();
-            musicTargetVol = 0.3;
-            spaceA.play().then(function () { spaceA.pause(); spaceA.currentTime = 0; }).catch(function () { });
-            spaceB.play().then(function () { spaceB.pause(); spaceB.currentTime = 0; }).catch(function () { });
+            // Evaluate current scroll position instead of hardcoding volume
+            var aEl = document.getElementById('about');
+            if (aEl) {
+              var r = aEl.getBoundingClientRect();
+              if (r.top < window.innerHeight * 0.5) {
+                musicTargetVol = 0;
+                spaceTargetVol = 0.35;
+                startSpaceLoop();
+              } else {
+                musicTargetVol = 0.3;
+                spaceTargetVol = 0;
+              }
+            } else {
+              musicTargetVol = 0.3;
+            }
           }).catch(function () { });
         };
-        var events = ['click', 'touchstart', 'mousedown', 'keydown', 'scroll', 'wheel', 'touchmove', 'mousemove'];
+        // Only real user activation events (not scroll/wheel/touchmove/mousemove)
+        var events = ['click', 'touchstart', 'mousedown', 'keydown'];
         events.forEach(function (e) {
           document.addEventListener(e, tryPlay, {
             passive: true
