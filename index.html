@@ -3434,15 +3434,13 @@
             var doLoad = function () {
               var viewer = document.createElement('spline-viewer');
               viewer.setAttribute('url', 'https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode');
-              var splineScale = isMob ? 'transform:scale(0.85);transform-origin:center center;' : '';
               viewer.style.cssText = [
                 'width:100%',
                 'height:100%',
                 'position:absolute',
                 'inset:0',
                 'opacity:0',
-                'transition:opacity 0.8s ease',
-                splineScale
+                'transition:opacity 0.8s ease'
               ].join(';');
 
               container.appendChild(viewer);
@@ -3554,16 +3552,27 @@
           containIntrinsicSize: '0 100vh'
         }
       },
-        // Container for Spline viewer — taller than section so logo is cropped by overflow:hidden
+        // Container for Spline viewer
         React.createElement('div', {
           ref: splineContainerRef,
           style: {
             position: 'absolute',
-            top: 0,
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 0
+          }
+        }),
+        // Cover Spline logo — full width bar at bottom
+        React.createElement('div', {
+          style: {
+            position: 'absolute',
+            bottom: 0,
             left: 0,
             width: '100%',
-            height: 'calc(100% + 80px)',
-            zIndex: 0
+            height: '50px',
+            background: '#0a0a0a',
+            zIndex: 10
           }
         }),
 
