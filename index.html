@@ -410,117 +410,6 @@
       transform: translate3d(0,0,2px);
       -webkit-transform: translate3d(0,0,2px);
     }
-
-    .lets-work-text {
-      font-family: 'Unbounded', 'Archivo', sans-serif;
-      font-weight: 800;
-      text-align: center;
-      user-select: none;
-      -webkit-user-select: none;
-      line-height: 1.1;
-      text-transform: uppercase;
-      color: transparent;
-      -webkit-text-fill-color: rgba(255,255,255,0.06);
-      background: linear-gradient(90deg, #1a2ffb 0%, #ff003c 33%, #ffbc00 66%, #00f3ff 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-stroke: 3px transparent;
-      position: relative;
-      white-space: pre-line;
-    }
-
-    /* Анимированная обводка через pseudo-element */
-    .lets-work-text::before {
-      content: attr(data-text);
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: transparent;
-      -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 4px;
-      background: linear-gradient(90deg, #1a2ffb 0%, #ff003c 33%, #ffbc00 66%, #00f3ff 100%);
-      background-size: 200% 100%;
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-stroke-color: currentColor;
-      animation: outlineShift 3s ease-in-out infinite alternate;
-    }
-
-    /* Мерцающая прозрачность — имитация stroke-dashoffset */
-    .lets-work-text::after {
-      content: attr(data-text);
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: transparent;
-      -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 4px rgba(255,255,255,0.06);
-      mask-image: linear-gradient(
-        90deg,
-        transparent 0%,
-        black 10%,
-        black 40%,
-        transparent 50%,
-        black 60%,
-        black 90%,
-        transparent 100%
-      );
-      -webkit-mask-image: linear-gradient(
-        90deg,
-        transparent 0%,
-        black 10%,
-        black 40%,
-        transparent 50%,
-        black 60%,
-        black 90%,
-        transparent 100%
-      );
-      mask-size: 200% 100%;
-      -webkit-mask-size: 200% 100%;
-      animation: maskSlide 3s ease-in-out infinite alternate;
-    }
-
-    @keyframes outlineShift {
-      0% {
-        background-position: 0% 50%;
-        opacity: 0.5;
-      }
-      100% {
-        background-position: 100% 50%;
-        opacity: 1;
-      }
-    }
-
-    @keyframes maskSlide {
-      0% {
-        mask-position: 100% 0%;
-        -webkit-mask-position: 100% 0%;
-      }
-      100% {
-        mask-position: 0% 0%;
-        -webkit-mask-position: 0% 0%;
-      }
-    }
-
-    /* Десктоп */
-    @media (min-width: 768px) {
-      .lets-work-text {
-        font-size: clamp(120px, 13vw, 200px);
-        letter-spacing: -0.02em;
-      }
-    }
-
-    /* Мобайл */
-    @media (max-width: 767px) {
-      .lets-work-text {
-        font-size: clamp(50px, 15vw, 100px);
-        letter-spacing: -0.02em;
-      }
-    }
   </style>
 </head>
 
@@ -3693,8 +3582,18 @@
           className: 'lets-work-outline'
         },
           React.createElement('div', {
-            className: 'lets-work-text',
-            'data-text': isMob ? "LET'S\nWORK" : "LET'S WORK"
+            style: {
+              fontFamily: "'Unbounded', 'Archivo', sans-serif",
+              fontWeight: isMob ? 600 : 800,
+              fontSize: isMob ? 'clamp(50px, 15vw, 100px)' : 'clamp(120px, 13vw, 200px)',
+              lineHeight: 1.1,
+              letterSpacing: '-0.02em',
+              textAlign: 'center',
+              userSelect: 'none',
+              color: 'transparent',
+              WebkitTextStroke: '3px #1a2ffb',
+              whiteSpace: 'pre-line'
+            }
           }, isMob ? "LET'S\nWORK" : "LET'S WORK")
         ),
 
