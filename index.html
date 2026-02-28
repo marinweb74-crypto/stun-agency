@@ -467,13 +467,13 @@
     var globalSoundOn = false;
     var globalMusic = new Audio('./music.mp3');
     globalMusic.loop = true;
-    globalMusic.volume = 0.3;
+    globalMusic.volume = 1; // iOS ignores .volume — use GainNode instead
     globalMusic.preload = 'auto';
     // Dual-buffer seamless loop for space track (mobile uses simple loop)
     var spaceA = new Audio('./space.mp3');
     var spaceB = new Audio('./space.mp3');
-    spaceA.volume = 0;
-    spaceB.volume = 0;
+    spaceA.volume = 1;
+    spaceB.volume = 1;
     spaceA.preload = 'auto';
     spaceB.preload = 'auto';
     if (isMobile) {
@@ -487,6 +487,52 @@
     var musicTargetVol = 0.3;
     var spaceTargetVol = 0;
     var spaceCurrentVol = 0;
+
+    // Web Audio API GainNodes — iOS ignores .volume, only GainNode works
+    var musicGain = null;
+    var spaceAGain = null;
+    var spaceBGain = null;
+    var audioGainCtx = null;
+    try {
+      audioGainCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var musicSrc = audioGainCtx.createMediaElementSource(globalMusic);
+      musicGain = audioGainCtx.createGain();
+      musicGain.gain.value = 0.3;
+      musicSrc.connect(musicGain);
+      musicGain.connect(audioGainCtx.destination);
+
+      var spaceASrc = audioGainCtx.createMediaElementSource(spaceA);
+      spaceAGain = audioGainCtx.createGain();
+      spaceAGain.gain.value = 0;
+      spaceASrc.connect(spaceAGain);
+      spaceAGain.connect(audioGainCtx.destination);
+
+      var spaceBSrc = audioGainCtx.createMediaElementSource(spaceB);
+      spaceBGain = audioGainCtx.createGain();
+      spaceBGain.gain.value = 0;
+      spaceBSrc.connect(spaceBGain);
+      spaceBGain.connect(audioGainCtx.destination);
+    } catch (e) {
+      // Fallback: no Web Audio API — .volume will work on desktop anyway
+    }
+
+    // Helper to set volume via GainNode (iOS) or .volume (fallback)
+    function setMusicVol(v) {
+      if (musicGain) { musicGain.gain.value = v; }
+      else { globalMusic.volume = v; }
+    }
+    function getMusicVol() {
+      if (musicGain) return musicGain.gain.value;
+      return globalMusic.volume;
+    }
+    function setSpaceAVol(v) {
+      if (spaceAGain) { spaceAGain.gain.value = v; }
+      else { spaceA.volume = v; }
+    }
+    function setSpaceBVol(v) {
+      if (spaceBGain) { spaceBGain.gain.value = v; }
+      else { spaceB.volume = v; }
+    }
     function startSpaceLoop() {
       if (spaceStarted) return;
       spaceStarted = true;
@@ -513,14 +559,14 @@
         globalMusic.play().catch(function () {});
       }
       var step = 0.01;
-      var mv = parseFloat(globalMusic.volume) || 0;
+      var mv = getMusicVol();
       if (Math.abs(mv - musicTargetVol) > 0.005) {
-        globalMusic.volume = Math.max(0, Math.min(1, mv + (musicTargetVol > mv ? step : -step)));
+        setMusicVol(Math.max(0, Math.min(1, mv + (musicTargetVol > mv ? step : -step))));
       }
       // Паузим музыку когда volume дошёл до 0
-      if (globalMusic.volume < 0.005 && musicTargetVol === 0) {
+      if (getMusicVol() < 0.005 && musicTargetVol === 0) {
         globalMusic.pause();
-        globalMusic.volume = 0;
+        setMusicVol(0);
       }
       // Smooth space target vol
       var svStep = 0.008;
@@ -531,22 +577,29 @@
 
       // Dual buffer crossfade logic (desktop only — mobile uses native loop)
       if (spaceStarted && isMobile) {
-        // Mobile: simple volume control, native loop handles repeat
-        spaceA.volume = spaceCurrentVol;
+        // Mobile: simple volume control via GainNode, native loop handles repeat
+        setSpaceAVol(spaceCurrentVol);
       } else if (spaceStarted && spaceCurrent.duration) {
         var timeLeft = spaceCurrent.duration - spaceCurrent.currentTime;
         if (timeLeft < spaceCrossfade && spaceNext.paused) {
           // Start next buffer
           spaceNext.currentTime = 0;
-          spaceNext.volume = 0;
+          if (spaceCurrent === spaceA) setSpaceBVol(0);
+          else setSpaceAVol(0);
           spaceNext.play().catch(function () { });
         }
         if (timeLeft < spaceCrossfade) {
           var fade = timeLeft / spaceCrossfade; // 1→0
-          spaceCurrent.volume = spaceCurrentVol * fade;
-          spaceNext.volume = spaceCurrentVol * (1 - fade);
+          if (spaceCurrent === spaceA) {
+            setSpaceAVol(spaceCurrentVol * fade);
+            setSpaceBVol(spaceCurrentVol * (1 - fade));
+          } else {
+            setSpaceBVol(spaceCurrentVol * fade);
+            setSpaceAVol(spaceCurrentVol * (1 - fade));
+          }
         } else {
-          spaceCurrent.volume = spaceCurrentVol;
+          if (spaceCurrent === spaceA) setSpaceAVol(spaceCurrentVol);
+          else setSpaceBVol(spaceCurrentVol);
         }
         // Swap when current ends
         if (spaceCurrent.ended || spaceCurrent.currentTime >= spaceCurrent.duration - 0.05) {
@@ -570,6 +623,7 @@
       var btnRef = useRef(null);
       var handleClick = function () {
         globalSoundOn = true;
+        if (audioGainCtx && audioGainCtx.state === 'suspended') audioGainCtx.resume();
         startCrossfade();
         globalMusic.play().catch(function () { });
         containerRef.current.style.transition = 'opacity 0.6s ease';
@@ -1546,11 +1600,6 @@
     }
 
     // ========== NAVIGATION ==========
-    // Global AudioContext for unlocking autoplay
-    var audioCtx = null;
-    try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    } catch (e) { }
     function Navigation() {
       var bp = useBreakpoint();
       var isMob = bp === 'mobile';
@@ -1617,7 +1666,7 @@
                 '\ntop<vh*0.5: ' + (rect.top < vh * 0.5) +
                 '\nglobalSoundOn: ' + globalSoundOn +
                 '\nmusicTargetVol: ' + musicTargetVol +
-                '\nmusic.volume: ' + (globalMusic.volume ? globalMusic.volume.toFixed(3) : '0') +
+                '\nmusic.vol(gain): ' + getMusicVol().toFixed(3) +
                 '\nmusic.paused: ' + globalMusic.paused +
                 '\ncrossfadeRAF: ' + (crossfadeRAF ? 'RUNNING' : 'null') +
                 '\nspaceStarted: ' + spaceStarted +
@@ -1649,8 +1698,9 @@
       useEffect(() => {
         var tryPlay = function () {
           if (audioStarted.current) return;
-          if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
+          // Resume AudioContext (iOS requires user gesture)
+          if (audioGainCtx && audioGainCtx.state === 'suspended') {
+            audioGainCtx.resume();
           }
           globalMusic.play().then(function () {
             audioStarted.current = true;
@@ -1666,13 +1716,13 @@
             if (inAbout) {
               musicTargetVol = 0;
               spaceTargetVol = 0.35;
-              globalMusic.volume = 0;
+              setMusicVol(0);
             } else {
               musicTargetVol = 0.3;
               spaceTargetVol = 0;
             }
             // Prime spaceA через play() — ОБЯЗАТЕЛЬНО внутри gesture chain для iOS
-            spaceA.volume = 0;
+            setSpaceAVol(0);
             spaceA.play().then(function () {
               if (inAbout) {
                 startSpaceLoop();
