@@ -1570,6 +1570,15 @@
           if (aboutEl) darkDiv = aboutEl.parentElement;
         }, 500);
 
+        // Debug panel for mobile audio diagnostics
+        var dbgPanel = null;
+        if (isMob) {
+          dbgPanel = document.createElement('div');
+          dbgPanel.id = 'audio-dbg';
+          dbgPanel.style.cssText = 'position:fixed;bottom:60px;left:8px;right:8px;background:rgba(0,0,0,0.85);color:#0f0;font:11px/1.4 monospace;padding:8px;border-radius:6px;z-index:99999;pointer-events:none;white-space:pre;';
+          document.body.appendChild(dbgPanel);
+        }
+
         var onScroll = function () {
           setScrolled(window.scrollY > 50);
 
@@ -1598,7 +1607,30 @@
               musicTargetVol = 0.3;
               spaceTargetVol = 0;
             }
+
+            // Debug overlay update
+            if (dbgPanel) {
+              dbgPanel.textContent =
+                'aboutEl: ' + (aboutEl ? 'FOUND' : 'NULL') +
+                '\nrect.top: ' + Math.round(rect.top) +
+                '\nvh*0.5: ' + Math.round(vh * 0.5) +
+                '\ntop<vh*0.5: ' + (rect.top < vh * 0.5) +
+                '\nglobalSoundOn: ' + globalSoundOn +
+                '\nmusicTargetVol: ' + musicTargetVol +
+                '\nmusic.volume: ' + (globalMusic.volume ? globalMusic.volume.toFixed(3) : '0') +
+                '\nmusic.paused: ' + globalMusic.paused +
+                '\ncrossfadeRAF: ' + (crossfadeRAF ? 'RUNNING' : 'null') +
+                '\nspaceStarted: ' + spaceStarted +
+                '\nspaceTargetVol: ' + spaceTargetVol +
+                '\nscrollY: ' + Math.round(window.scrollY);
+            }
+          } else {
+            // aboutEl not found yet
+            if (dbgPanel) {
+              dbgPanel.textContent = 'aboutEl: NULL (not found yet)\nscrollY: ' + Math.round(window.scrollY);
+            }
           }
+
           // Гарантируем что crossfade RAF loop работает
           if (globalSoundOn && !crossfadeRAF) {
             startCrossfade();
@@ -1609,6 +1641,7 @@
         return function () {
           removeScroll();
           if (cacheTimer) clearTimeout(cacheTimer);
+          if (dbgPanel && dbgPanel.parentNode) dbgPanel.parentNode.removeChild(dbgPanel);
         };
       }, []);
 
