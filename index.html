@@ -399,23 +399,126 @@
       transform: rotateY(360deg);
     }
 
-    /* Spline Outline Reveal */
-    .outline-text-reveal {
-      fill: rgba(255,255,255,0.06);
-      stroke: url(#textGrad);
-      stroke-width: 4px;
-      stroke-dasharray: 800;
-      stroke-dashoffset: 400;
-      paint-order: stroke fill;
-      animation: svgTextDraw 3s ease-in-out infinite alternate;
+    .lets-work-outline {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 12;
+      pointer-events: none;
+      transform: translate3d(0,0,2px);
+      -webkit-transform: translate3d(0,0,2px);
     }
 
-    @keyframes svgTextDraw {
+    .lets-work-text {
+      font-family: 'Unbounded', 'Archivo', sans-serif;
+      font-weight: 800;
+      text-align: center;
+      user-select: none;
+      -webkit-user-select: none;
+      line-height: 1.1;
+      text-transform: uppercase;
+      color: transparent;
+      -webkit-text-fill-color: rgba(255,255,255,0.06);
+      background: linear-gradient(90deg, #1a2ffb 0%, #ff003c 33%, #ffbc00 66%, #00f3ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-stroke: 3px transparent;
+      position: relative;
+      white-space: pre-line;
+    }
+
+    /* Анимированная обводка через pseudo-element */
+    .lets-work-text::before {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      -webkit-text-stroke: 4px;
+      background: linear-gradient(90deg, #1a2ffb 0%, #ff003c 33%, #ffbc00 66%, #00f3ff 100%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-stroke-color: currentColor;
+      animation: outlineShift 3s ease-in-out infinite alternate;
+    }
+
+    /* Мерцающая прозрачность — имитация stroke-dashoffset */
+    .lets-work-text::after {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      -webkit-text-stroke: 4px rgba(255,255,255,0.06);
+      mask-image: linear-gradient(
+        90deg,
+        transparent 0%,
+        black 10%,
+        black 40%,
+        transparent 50%,
+        black 60%,
+        black 90%,
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        90deg,
+        transparent 0%,
+        black 10%,
+        black 40%,
+        transparent 50%,
+        black 60%,
+        black 90%,
+        transparent 100%
+      );
+      mask-size: 200% 100%;
+      -webkit-mask-size: 200% 100%;
+      animation: maskSlide 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes outlineShift {
       0% {
-        stroke-dashoffset: 400;
+        background-position: 0% 50%;
+        opacity: 0.5;
       }
       100% {
-        stroke-dashoffset: 0;
+        background-position: 100% 50%;
+        opacity: 1;
+      }
+    }
+
+    @keyframes maskSlide {
+      0% {
+        mask-position: 100% 0%;
+        -webkit-mask-position: 100% 0%;
+      }
+      100% {
+        mask-position: 0% 0%;
+        -webkit-mask-position: 0% 0%;
+      }
+    }
+
+    /* Десктоп */
+    @media (min-width: 768px) {
+      .lets-work-text {
+        font-size: clamp(120px, 13vw, 200px);
+        letter-spacing: -0.02em;
+      }
+    }
+
+    /* Мобайл */
+    @media (max-width: 767px) {
+      .lets-work-text {
+        font-size: clamp(50px, 15vw, 100px);
+        letter-spacing: -0.02em;
       }
     }
   </style>
@@ -3586,74 +3689,13 @@
         }),
 
         /* Outline Reveal Text - LET'S WORK */
-        /*#__PURE__*/React.createElement("div", {
-          style: {
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: isMob ? 12 : 4,
-            pointerEvents: 'none',
-            transform: isMob ? 'translate3d(0,0,1px)' : 'none',
-            WebkitTransform: isMob ? 'translate3d(0,0,1px)' : 'none',
-            willChange: isMob ? 'transform' : 'auto',
-            isolation: isMob ? 'isolate' : 'auto'
-          }
+        React.createElement('div', {
+          className: 'lets-work-outline'
         },
-          /*#__PURE__*/React.createElement("div", {
-          style: {
-            width: '100%',
-            height: '100%',
-            maxWidth: isMob ? '100%' : '1600px',
-            transform: isMob ? 'translate3d(0,0,0)' : 'none',
-            WebkitTransform: isMob ? 'translate3d(0,0,0)' : 'none',
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden'
-          }
-        },
-          /*#__PURE__*/React.createElement("svg", {
-          viewBox: isMob ? "0 0 800 500" : "0 0 1600 400",
-          style: {
-            width: '100%',
-            height: '100%'
-          }
-        },
-            /*#__PURE__*/React.createElement("defs", null,
-              /*#__PURE__*/React.createElement("linearGradient", { id: "textGrad", x1: "0%", y1: "0%", x2: "100%", y2: "0%" },
-                /*#__PURE__*/React.createElement("stop", { offset: "0%", stopColor: "#1a2ffb" }),
-                /*#__PURE__*/React.createElement("stop", { offset: "33%", stopColor: "#ff003c" }),
-                /*#__PURE__*/React.createElement("stop", { offset: "66%", stopColor: "#ffbc00" }),
-                /*#__PURE__*/React.createElement("stop", { offset: "100%", stopColor: "#00f3ff" })
-        )
-        ),
-            isMob ? /*#__PURE__*/React.createElement("text", {
-          textAnchor: "middle",
-          className: "outline-text-reveal",
-          style: {
-            fontFamily: "'Unbounded', 'Archivo', sans-serif",
-            fontWeight: 600,
-            fontSize: '140px',
-            letterSpacing: '-0.02em',
-            userSelect: 'none'
-          }
-        }, /*#__PURE__*/React.createElement("tspan", { x: "50%", dy: "180" }, "LET'S"), /*#__PURE__*/React.createElement("tspan", { x: "50%", dy: "160" }, "WORK"))
-            : /*#__PURE__*/React.createElement("text", {
-          x: "50%",
-          y: "50%",
-          textAnchor: "middle",
-          dominantBaseline: "middle",
-          className: "outline-text-reveal",
-          style: {
-            fontFamily: "'Unbounded', 'Archivo', sans-serif",
-            fontWeight: 800,
-            fontSize: '200px',
-            letterSpacing: '-0.02em',
-            userSelect: 'none'
-          }
-        }, "LET'S WORK")
-        )
-        )
+          React.createElement('div', {
+            className: 'lets-work-text',
+            'data-text': isMob ? "LET'S\nWORK" : "LET'S WORK"
+          }, isMob ? "LET'S\nWORK" : "LET'S WORK")
         ),
 
         !isMob && /*#__PURE__*/React.createElement("div", {
