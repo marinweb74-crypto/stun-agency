@@ -3560,8 +3560,8 @@
             zIndex: 0
           }
         }),
-        // Solid bar — guarantees logo is hidden
-        React.createElement('div', {
+        // Solid bar — guarantees logo is hidden (mobile only)
+        isMob && React.createElement('div', {
           style: {
             position: 'absolute',
             bottom: 0,
@@ -3572,8 +3572,8 @@
             zIndex: 11
           }
         }),
-        // Gradient — smooth transition above the solid bar
-        React.createElement('div', {
+        // Gradient — smooth transition above the solid bar (mobile only)
+        isMob && React.createElement('div', {
           style: {
             position: 'absolute',
             bottom: '50px',
@@ -3593,7 +3593,7 @@
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 12,
+            zIndex: isMob ? 12 : 4,
             pointerEvents: 'none'
           }
         },
