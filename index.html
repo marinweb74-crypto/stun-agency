@@ -500,7 +500,7 @@
         return audioGainCtx.decodeAudioData(buf);
       }).then(function (decoded) {
         // Create crossfade at loop boundary: blend last N seconds into first N seconds
-        var fadeSec = 2; // crossfade duration in seconds
+        var fadeSec = 5; // crossfade duration in seconds
         var sr = decoded.sampleRate;
         var fadeSamples = Math.floor(fadeSec * sr);
         var ch = decoded.numberOfChannels;
