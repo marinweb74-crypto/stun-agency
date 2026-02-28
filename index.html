@@ -476,9 +476,7 @@
     spaceB.volume = 1;
     spaceA.preload = 'auto';
     spaceB.preload = 'auto';
-    if (isMobile) {
-      spaceA.loop = true; // Simple native loop on mobile — dual-buffer play() fails without gesture
-    }
+    // No native loop — dual-buffer crossfade handles seamless looping on both mobile and desktop
     var spaceCurrent = spaceA;
     var spaceNext = spaceB;
     var spaceDuration = 12; // ~12 seconds
@@ -576,22 +574,8 @@
       }
 
       // Dual buffer crossfade logic (desktop only — mobile uses native loop)
-      if (spaceStarted && isMobile && spaceA.duration) {
-        // Mobile: native loop + GainNode fade at loop boundary for smooth transition
-        var sFade = 1.5; // seconds to fade out/in at loop edges
-        var sTimeLeft = spaceA.duration - spaceA.currentTime;
-        var sTime = spaceA.currentTime;
-        var sMult = 1;
-        if (sTimeLeft < sFade) {
-          sMult = sTimeLeft / sFade; // fade out: 1→0
-        } else if (sTime < sFade) {
-          sMult = sTime / sFade; // fade in: 0→1
-        }
-        setSpaceAVol(spaceCurrentVol * sMult);
-      } else if (spaceStarted && isMobile) {
-        // Mobile: duration not loaded yet, just set volume
-        setSpaceAVol(spaceCurrentVol);
-      } else if (spaceStarted && spaceCurrent.duration) {
+      // Dual buffer crossfade — same logic for mobile and desktop
+      if (spaceStarted && spaceCurrent.duration) {
         var timeLeft = spaceCurrent.duration - spaceCurrent.currentTime;
         if (timeLeft < spaceCrossfade && spaceNext.paused) {
           // Start next buffer
@@ -1733,8 +1717,9 @@
               musicTargetVol = 0.3;
               spaceTargetVol = 0;
             }
-            // Prime spaceA через play() — ОБЯЗАТЕЛЬНО внутри gesture chain для iOS
+            // Prime BOTH spaceA and spaceB inside gesture chain for iOS
             setSpaceAVol(0);
+            setSpaceBVol(0);
             spaceA.play().then(function () {
               if (inAbout) {
                 startSpaceLoop();
@@ -1742,6 +1727,11 @@
                 spaceA.pause();
                 spaceA.currentTime = 0;
               }
+            }).catch(function () {});
+            // Prime spaceB too — so dual-buffer crossfade works on mobile
+            spaceB.play().then(function () {
+              spaceB.pause();
+              spaceB.currentTime = 0;
             }).catch(function () {});
           }).catch(function () { });
         };
