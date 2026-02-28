@@ -517,6 +517,11 @@
       if (Math.abs(mv - musicTargetVol) > 0.005) {
         globalMusic.volume = Math.max(0, Math.min(1, mv + (musicTargetVol > mv ? step : -step)));
       }
+      // Паузим музыку когда volume дошёл до 0
+      if (globalMusic.volume < 0.005 && musicTargetVol === 0) {
+        globalMusic.pause();
+        globalMusic.volume = 0;
+      }
       // Smooth space target vol
       var svStep = 0.008;
       if (Math.abs(spaceCurrentVol - spaceTargetVol) > 0.005) {
@@ -1594,6 +1599,10 @@
               spaceTargetVol = 0;
             }
           }
+          // Гарантируем что crossfade RAF loop работает
+          if (globalSoundOn && !crossfadeRAF) {
+            startCrossfade();
+          }
         };
         var removeScroll = addScrollListener(onScroll);
 
@@ -1614,10 +1623,31 @@
             audioStarted.current = true;
             globalSoundOn = true;
             startCrossfade();
-            musicTargetVol = 0.3;
-            // Prime space buffers via load() — no playback, just preload into memory
-            spaceA.load();
-            spaceB.load();
+            // Проверяем — может юзер уже проскроллил до About
+            var aboutNow = document.getElementById('about');
+            var inAbout = false;
+            if (aboutNow) {
+              var aRect = aboutNow.getBoundingClientRect();
+              inAbout = aRect.top < window.innerHeight * 0.5;
+            }
+            if (inAbout) {
+              musicTargetVol = 0;
+              spaceTargetVol = 0.35;
+              globalMusic.volume = 0;
+            } else {
+              musicTargetVol = 0.3;
+              spaceTargetVol = 0;
+            }
+            // Prime spaceA через play() — ОБЯЗАТЕЛЬНО внутри gesture chain для iOS
+            spaceA.volume = 0;
+            spaceA.play().then(function () {
+              if (inAbout) {
+                startSpaceLoop();
+              } else {
+                spaceA.pause();
+                spaceA.currentTime = 0;
+              }
+            }).catch(function () {});
           }).catch(function () { });
         };
         // Only real user activation events (not scroll/wheel/touchmove/mousemove)
