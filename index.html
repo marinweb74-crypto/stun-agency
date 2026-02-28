@@ -465,7 +465,7 @@
       }
     }
 
-    /* Glass text behind robot — desktop only */
+    /* Crystal Chrome text behind robot — desktop only */
     .glass-text-wrap {
       position: absolute;
       top: 50%;
@@ -479,41 +479,89 @@
     .glass-text {
       font-family: 'Archivo', sans-serif;
       font-weight: 900;
-      font-size: clamp(120px, 18vw, 320px);
+      font-size: clamp(200px, 14vw, 500px);
       text-transform: uppercase;
       letter-spacing: -0.04em;
-      color: rgba(255, 255, 255, 0.07);
       position: relative;
       user-select: none;
       line-height: 1;
+      color: transparent;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255,255,255,0.35) 0%,
+          rgba(255,255,255,0.12) 25%,
+          rgba(255,255,255,0.03) 40%,
+          rgba(200,210,255,0.06) 50%,
+          rgba(255,255,255,0.02) 60%,
+          rgba(255,255,255,0.10) 80%,
+          rgba(255,255,255,0.25) 100%
+        );
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 8px rgba(150,170,255,0.08));
     }
 
+    /* Top edge highlight — glass reflection */
+    .glass-text::before {
+      content: 'LET\'S WORK';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(
+          170deg,
+          rgba(255,255,255,0.5) 0%,
+          rgba(255,255,255,0.15) 8%,
+          transparent 20%,
+          transparent 80%,
+          rgba(255,255,255,0.08) 95%,
+          rgba(255,255,255,0.15) 100%
+        );
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      z-index: 1;
+    }
+
+    /* Animated caustic light sweep */
     .glass-text::after {
       content: '';
       position: absolute;
       top: 0;
-      left: -100%;
-      width: 60%;
+      left: -120%;
+      width: 80%;
       height: 100%;
       background: linear-gradient(
-        105deg,
+        100deg,
         transparent 0%,
-        transparent 35%,
-        rgba(255, 255, 255, 0.12) 45%,
-        rgba(255, 255, 255, 0.2) 50%,
-        rgba(255, 255, 255, 0.12) 55%,
-        transparent 65%,
+        transparent 30%,
+        rgba(180, 200, 255, 0.08) 38%,
+        rgba(255, 255, 255, 0.18) 44%,
+        rgba(255, 255, 255, 0.25) 50%,
+        rgba(255, 255, 255, 0.18) 56%,
+        rgba(180, 200, 255, 0.08) 62%,
+        transparent 70%,
         transparent 100%
       );
-      animation: glass-shine 4s ease-in-out infinite;
+      animation: crystal-caustic 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      mix-blend-mode: overlay;
     }
 
-    @keyframes glass-shine {
+    @keyframes crystal-caustic {
       0% {
-        left: -100%;
+        left: -120%;
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
       }
       100% {
-        left: 200%;
+        left: 220%;
+        opacity: 0;
       }
     }
   </style>
