@@ -495,11 +495,37 @@
       spaceGain.gain.value = 0;
       spaceGain.connect(audioGainCtx.destination);
 
-      // Fetch and decode space.mp3 into AudioBuffer
+      // Fetch, decode, and crossfade-loop space.mp3 for seamless playback
       fetch('./space.mp3').then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
         return audioGainCtx.decodeAudioData(buf);
       }).then(function (decoded) {
-        spaceBuffer = decoded;
+        // Create crossfade at loop boundary: blend last N seconds into first N seconds
+        var fadeSec = 2; // crossfade duration in seconds
+        var sr = decoded.sampleRate;
+        var fadeSamples = Math.floor(fadeSec * sr);
+        var ch = decoded.numberOfChannels;
+        var len = decoded.length;
+        if (fadeSamples > len / 2) fadeSamples = Math.floor(len / 2);
+        // New buffer is shorter by fadeSamples (tail overlaps head)
+        var newLen = len - fadeSamples;
+        var newBuf = audioGainCtx.createBuffer(ch, newLen, sr);
+        for (var c = 0; c < ch; c++) {
+          var src = decoded.getChannelData(c);
+          var dst = newBuf.getChannelData(c);
+          // Copy main body
+          for (var i = 0; i < newLen; i++) {
+            dst[i] = src[i];
+          }
+          // Blend: fade out the beginning, fade in the tail
+          for (var j = 0; j < fadeSamples; j++) {
+            var t = j / fadeSamples; // 0→1
+            var headSample = dst[j];
+            var tailSample = src[newLen + j];
+            // Crossfade: head fades in, tail fades out
+            dst[j] = headSample * t + tailSample * (1 - t);
+          }
+        }
+        spaceBuffer = newBuf;
       }).catch(function () {});
     } catch (e) {}
 
