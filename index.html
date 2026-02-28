@@ -425,6 +425,26 @@
         -webkit-text-stroke-color: #00f3ff;
       }
     }
+
+    /* Desktop SVG text with animated stroke */
+    .outline-text-reveal {
+      fill: rgba(255,255,255,0.06);
+      stroke: url(#textGrad);
+      stroke-width: 4px;
+      stroke-dasharray: 800;
+      stroke-dashoffset: 400;
+      paint-order: stroke fill;
+      animation: svgTextDraw 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes svgTextDraw {
+      0% {
+        stroke-dashoffset: 400;
+      }
+      100% {
+        stroke-dashoffset: 0;
+      }
+    }
   </style>
 </head>
 
@@ -3663,15 +3683,15 @@
           }
         }),
 
-        /* Outline Reveal Text - LET'S WORK */
-        React.createElement('div', {
+        /* LET'S WORK — mobile: HTML outline, desktop: original SVG */
+        isMob ? React.createElement('div', {
           className: 'lets-work-outline'
         },
           React.createElement('div', {
             style: {
               fontFamily: "'Unbounded', 'Archivo', sans-serif",
-              fontWeight: isMob ? 600 : 800,
-              fontSize: isMob ? 'clamp(50px, 15vw, 100px)' : 'clamp(120px, 13vw, 200px)',
+              fontWeight: 600,
+              fontSize: 'clamp(50px, 15vw, 100px)',
               lineHeight: 1.1,
               letterSpacing: '-0.02em',
               textAlign: 'center',
@@ -3682,7 +3702,45 @@
               WebkitTextStroke: '3px #1a2ffb',
               animation: 'strokeColor 4s ease-in-out infinite'
             }
-          }, isMob ? "LET'S\nWORK" : "LET'S WORK")
+          }, "LET'S\nWORK")
+        ) : React.createElement('div', {
+          style: {
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 4,
+            pointerEvents: 'none'
+          }
+        },
+          React.createElement('svg', {
+            viewBox: '0 0 1600 400',
+            style: { width: '100%', height: '100%', maxWidth: '1600px' }
+          },
+            React.createElement('defs', null,
+              React.createElement('linearGradient', { id: 'textGrad', x1: '0%', y1: '0%', x2: '100%', y2: '0%' },
+                React.createElement('stop', { offset: '0%', stopColor: '#1a2ffb' }),
+                React.createElement('stop', { offset: '33%', stopColor: '#ff003c' }),
+                React.createElement('stop', { offset: '66%', stopColor: '#ffbc00' }),
+                React.createElement('stop', { offset: '100%', stopColor: '#00f3ff' })
+              )
+            ),
+            React.createElement('text', {
+              x: '50%',
+              y: '50%',
+              textAnchor: 'middle',
+              dominantBaseline: 'middle',
+              className: 'outline-text-reveal',
+              style: {
+                fontFamily: "'Unbounded', 'Archivo', sans-serif",
+                fontWeight: 800,
+                fontSize: '200px',
+                letterSpacing: '-0.02em',
+                userSelect: 'none'
+              }
+            }, "LET'S WORK")
+          )
         ),
 
         !isMob && /*#__PURE__*/React.createElement("div", {
