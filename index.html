@@ -410,6 +410,39 @@
       transform: translate3d(0,0,2px);
       -webkit-transform: translate3d(0,0,2px);
     }
+
+    .lets-work-stroke {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      -webkit-text-stroke: 3px;
+      background: linear-gradient(90deg, #1a2ffb 0%, #ff003c 33%, #ffbc00 66%, #00f3ff 100%);
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 15%, black 35%, transparent 50%, black 65%, black 85%, transparent 100%);
+      mask-image: linear-gradient(90deg, transparent 0%, black 15%, black 35%, transparent 50%, black 65%, black 85%, transparent 100%);
+      -webkit-mask-size: 300% 100%;
+      mask-size: 300% 100%;
+      animation: strokeReveal 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes strokeReveal {
+      0% {
+        -webkit-mask-position: 100% 0;
+        mask-position: 100% 0;
+        background-position: 0% 50%;
+      }
+      100% {
+        -webkit-mask-position: 0% 0;
+        mask-position: 0% 0;
+        background-position: 100% 50%;
+      }
+    }
   </style>
 </head>
 
@@ -3579,21 +3612,28 @@
 
         /* Outline Reveal Text - LET'S WORK */
         React.createElement('div', {
-          className: 'lets-work-outline'
+          className: 'lets-work-outline',
+          style: {
+            fontFamily: "'Unbounded', 'Archivo', sans-serif",
+            fontWeight: isMob ? 600 : 800,
+            fontSize: isMob ? 'clamp(50px, 15vw, 100px)' : 'clamp(120px, 13vw, 200px)',
+            lineHeight: 1.1,
+            letterSpacing: '-0.02em',
+            textAlign: 'center',
+            userSelect: 'none',
+            whiteSpace: 'pre-line'
+          }
         },
+          // Базовый слой — еле видимый контур (всегда виден)
           React.createElement('div', {
             style: {
-              fontFamily: "'Unbounded', 'Archivo', sans-serif",
-              fontWeight: isMob ? 600 : 800,
-              fontSize: isMob ? 'clamp(50px, 15vw, 100px)' : 'clamp(120px, 13vw, 200px)',
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-              textAlign: 'center',
-              userSelect: 'none',
               color: 'transparent',
-              WebkitTextStroke: '3px #1a2ffb',
-              whiteSpace: 'pre-line'
+              WebkitTextStroke: '3px rgba(255,255,255,0.06)'
             }
+          }, isMob ? "LET'S\nWORK" : "LET'S WORK"),
+          // Анимированный слой — градиентный контур бегает
+          React.createElement('div', {
+            className: 'lets-work-stroke'
           }, isMob ? "LET'S\nWORK" : "LET'S WORK")
         ),
 
