@@ -444,13 +444,6 @@
       }
     }
 
-    /* Desktop: hide marquee, show glass text */
-    @media (min-width: 768px) {
-      .marquee-wrap {
-        display: none;
-      }
-    }
-
     @media (max-width: 767px) {
       .marquee-item {
         font-size: clamp(80px, 24vw, 160px);
@@ -3650,154 +3643,6 @@
         };
       }, [isMob]);
 
-      // 3D Glass text — desktop only (Three.js + custom shader)
-      useEffect(function () {
-        if (isMob) return;
-        var container = sectionRef.current;
-        if (!container || typeof THREE === 'undefined') return;
-
-        // 1. Render text to 2D canvas at 3x resolution for crisp edges
-        var w = container.offsetWidth;
-        var h = container.offsetHeight;
-        var scale = 3;
-        var cw = Math.round(w * scale);
-        var ch = Math.round(h * scale);
-
-        var textCanvas = document.createElement('canvas');
-        textCanvas.width = cw;
-        textCanvas.height = ch;
-        var tCtx = textCanvas.getContext('2d');
-        tCtx.imageSmoothingEnabled = true;
-        tCtx.imageSmoothingQuality = 'high';
-        tCtx.clearRect(0, 0, cw, ch);
-        var fontSize = Math.round(ch * 0.3);
-        tCtx.font = '900 ' + fontSize + 'px Archivo, sans-serif';
-        tCtx.textAlign = 'center';
-        tCtx.textBaseline = 'middle';
-        tCtx.fillStyle = '#ffffff';
-        tCtx.save();
-        tCtx.translate(cw / 2, ch / 2);
-        tCtx.scale(1, 2);
-        tCtx.fillText("LET'S WORK", 0, 0);
-        tCtx.restore();
-
-        // 2. Three.js scene
-        var scene = new THREE.Scene();
-        var camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-        camera.position.z = 1;
-
-        var glRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        glRenderer.setSize(w, h);
-        glRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        glRenderer.domElement.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;';
-        container.insertBefore(glRenderer.domElement, container.firstChild);
-
-        var textTexture = new THREE.CanvasTexture(textCanvas);
-        textTexture.generateMipmaps = true;
-        textTexture.minFilter = THREE.LinearMipmapLinearFilter;
-        textTexture.magFilter = THREE.LinearFilter;
-        textTexture.anisotropy = glRenderer.capabilities.getMaxAnisotropy();
-
-        // 3. Glass shader — pure white, no color
-        var vertexShader = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
-
-        var fragmentShader = [
-          'uniform sampler2D uTexture;',
-          'uniform float uTime;',
-          'varying vec2 vUv;',
-          '',
-          'void main() {',
-          '  float mask = texture2D(uTexture, vUv).r;',
-          '  if (mask < 0.02) discard;',
-          '',
-          '  // === VITREOUS DEPTH — multi-layer glass ===',
-          '',
-          '  // Layer 1: Glass body — vertical gradient (bright top, dark mid, subtle bottom)',
-          '  float topReflect = smoothstep(0.38, 0.62, vUv.y);',
-          '  float botReflect = smoothstep(0.55, 0.38, vUv.y);',
-          '  float body = mask * (0.08 + 0.18 * topReflect + 0.06 * botReflect);',
-          '',
-          '  // Layer 2: Top edge highlight — sharp bright line at top of letters',
-          '  float topEdge = smoothstep(0.48, 0.52, vUv.y) * smoothstep(0.56, 0.52, vUv.y);',
-          '  float highlight = topEdge * mask * 0.6;',
-          '',
-          '  // Layer 3: Two specular spots — slow orbiting lights',
-          '  vec2 l1 = vec2(0.3 + 0.3 * sin(uTime * 0.25), 0.52 + 0.08 * cos(uTime * 0.2));',
-          '  vec2 l2 = vec2(0.7 + 0.2 * cos(uTime * 0.3), 0.48 + 0.1 * sin(uTime * 0.22));',
-          '  float s1 = pow(max(0.0, 1.0 - distance(vUv, l1) * 2.8), 10.0) * mask;',
-          '  float s2 = pow(max(0.0, 1.0 - distance(vUv, l2) * 3.2), 12.0) * mask;',
-          '',
-          '  // Layer 4: Thin edge outline — glass border definition',
-          '  float dx = abs(dFdx(mask));',
-          '  float dy = abs(dFdy(mask));',
-          '  float edge = clamp((dx + dy) * 80.0, 0.0, 1.0) * 0.35;',
-          '',
-          '  // Layer 5: Sweeping light band',
-          '  float sweep = sin(vUv.x * 3.14159 + uTime * 0.15) * 0.5 + 0.5;',
-          '  sweep = pow(sweep, 8.0) * mask * 0.12;',
-          '',
-          '  // Combine all layers',
-          '  float alpha = body + highlight + s1 * 0.6 + s2 * 0.4 + edge + sweep;',
-          '  alpha = clamp(alpha, 0.0, 0.8);',
-          '  gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);',
-          '}'
-        ].join('\n');
-
-        var material = new THREE.ShaderMaterial({
-          transparent: true,
-          uniforms: {
-            uTexture: { value: textTexture },
-            uTime: { value: 0 }
-          },
-          vertexShader: vertexShader,
-          fragmentShader: fragmentShader
-        });
-
-        var plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
-        scene.add(plane);
-
-        // 4. Animation loop
-        var glassAid = null;
-        var startTime = performance.now();
-        function glassLoop() {
-          material.uniforms.uTime.value = (performance.now() - startTime) * 0.001;
-          glRenderer.render(scene, camera);
-          glassAid = requestAnimationFrame(glassLoop);
-        }
-
-        // IntersectionObserver — only animate when visible
-        var glassVisible = false;
-        var glassObs = new IntersectionObserver(function (entries) {
-          glassVisible = entries[0].isIntersecting;
-          if (glassVisible && !glassAid) glassLoop();
-          if (!glassVisible && glassAid) {
-            cancelAnimationFrame(glassAid);
-            glassAid = null;
-          }
-        }, { threshold: 0 });
-        glassObs.observe(container);
-
-        // Handle resize
-        function onResize() {
-          var nw = container.offsetWidth;
-          var nh = container.offsetHeight;
-          glRenderer.setSize(nw, nh);
-        }
-        window.addEventListener('resize', onResize);
-
-        return function () {
-          if (glassAid) cancelAnimationFrame(glassAid);
-          glassObs.disconnect();
-          window.removeEventListener('resize', onResize);
-          if (glRenderer.domElement.parentNode) {
-            glRenderer.domElement.parentNode.removeChild(glRenderer.domElement);
-          }
-          glRenderer.dispose();
-          material.dispose();
-          textTexture.dispose();
-        };
-      }, [isMob]);
-
       return /*#__PURE__*/React.createElement("section", {
         ref: sectionRef,
         id: "spline-scene",
@@ -3812,7 +3657,7 @@
           containIntrinsicSize: '0 100vh'
         }
       },
-        // Container for Spline viewer (above glass text)
+        // Container for Spline viewer
         React.createElement('div', {
           ref: splineContainerRef,
           style: {
@@ -3820,7 +3665,7 @@
             inset: 0,
             width: '100%',
             height: '100%',
-            zIndex: 2
+            zIndex: 0
           }
         }),
         // Solid bar — guarantees logo is hidden (mobile only)
