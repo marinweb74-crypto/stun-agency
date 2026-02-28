@@ -401,12 +401,12 @@
 
     /* Spline Outline Reveal */
     .outline-text-reveal {
-      fill: transparent;
+      fill: rgba(255,255,255,0.06);
       stroke: url(#textGrad);
-      stroke-width: 3px;
+      stroke-width: 4px;
       stroke-dasharray: 800;
       stroke-dashoffset: 400;
-      /* Изначальное значение (50%) */
+      paint-order: stroke fill;
       animation: svgTextDraw 3s ease-in-out infinite alternate;
     }
 
