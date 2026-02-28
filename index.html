@@ -399,91 +399,71 @@
       transform: rotateY(360deg);
     }
 
-    .lets-work-outline {
+    /* Marquee — LET'S WORK */
+    .marquee-wrap {
       position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      bottom: 15%;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
       z-index: 12;
       pointer-events: none;
       transform: translate3d(0, 0, 2px);
       -webkit-transform: translate3d(0, 0, 2px);
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
+      mask-image: linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
     }
 
-    .lets-work-text {
+    .marquee-track {
+      display: flex;
+      align-items: center;
+      width: max-content;
+      animation: marquee-scroll 14s linear infinite;
+      will-change: transform;
+    }
+
+    .marquee-item {
+      font-family: 'Unbounded', 'Archivo', sans-serif;
+      font-weight: 800;
       color: transparent;
-      -webkit-text-fill-color: rgba(255, 255, 255, 0.04);
-      -webkit-text-stroke: 3px var(--stroke-c, #1a2ffb);
-      animation:
-        lw-draw 3s cubic-bezier(0.4, 0, 0.2, 1) forwards,
-        lw-color 6s ease-in-out 3s infinite;
-      -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 0%, transparent 0%, transparent 100%);
-      mask-image: linear-gradient(90deg, #000 0%, #000 0%, transparent 0%, transparent 100%);
+      -webkit-text-fill-color: transparent;
+      -webkit-text-stroke: 3px #1a2ffb;
+      white-space: nowrap;
+      user-select: none;
+      padding: 0 20px;
+      font-size: clamp(80px, 10vw, 160px);
     }
 
-    @keyframes lw-draw {
+    .marquee-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #1a2ffb;
+      flex-shrink: 0;
+      margin: 0 10px;
+    }
+
+    @keyframes marquee-scroll {
       0% {
-        -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 2%, transparent 100%);
-        mask-image: linear-gradient(90deg, #000 0%, transparent 2%, transparent 100%);
-        opacity: 0.5;
-      }
-      20% {
-        -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 18%, transparent 22%, transparent 100%);
-        mask-image: linear-gradient(90deg, #000 0%, #000 18%, transparent 22%, transparent 100%);
-        opacity: 0.7;
-      }
-      40% {
-        -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 38%, transparent 42%, transparent 100%);
-        mask-image: linear-gradient(90deg, #000 0%, #000 38%, transparent 42%, transparent 100%);
-      }
-      60% {
-        -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 58%, transparent 62%, transparent 100%);
-        mask-image: linear-gradient(90deg, #000 0%, #000 58%, transparent 62%, transparent 100%);
-      }
-      80% {
-        -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 78%, transparent 82%, transparent 100%);
-        mask-image: linear-gradient(90deg, #000 0%, #000 78%, transparent 82%, transparent 100%);
-        opacity: 0.9;
+        transform: translate3d(0, 0, 2px);
       }
       100% {
-        -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 100%);
-        mask-image: linear-gradient(90deg, #000 0%, #000 100%);
-        opacity: 1;
+        transform: translate3d(-50%, 0, 2px);
       }
     }
 
-    @keyframes lw-color {
-      0%, 100% {
-        -webkit-text-stroke-color: #1a2ffb;
+    @media (max-width: 767px) {
+      .marquee-item {
+        font-size: clamp(40px, 12vw, 80px);
+        -webkit-text-stroke: 2px #1a2ffb;
       }
-      25% {
-        -webkit-text-stroke-color: #ff003c;
+      .marquee-dot {
+        width: 10px;
+        height: 10px;
+        margin: 0 6px;
       }
-      50% {
-        -webkit-text-stroke-color: #ffbc00;
-      }
-      75% {
-        -webkit-text-stroke-color: #00f3ff;
-      }
-    }
-
-    /* Spline Outline Reveal */
-    .outline-text-reveal {
-      fill: transparent;
-      stroke: url(#textGrad);
-      stroke-width: 3px;
-      stroke-dasharray: 800;
-      stroke-dashoffset: 400;
-      animation: svgTextDraw 3s ease-in-out infinite alternate;
-    }
-
-    @keyframes svgTextDraw {
-      0% {
-        stroke-dashoffset: 400;
-      }
-      100% {
-        stroke-dashoffset: 0;
+      .marquee-wrap {
+        bottom: 10%;
       }
     }
   </style>
@@ -3742,67 +3722,32 @@
           }
         }),
 
-        /* LET'S WORK — mobile: Canvas 2D draw animation, desktop: original SVG */
-        isMob ? React.createElement('div', {
-          className: 'lets-work-outline'
-        },
-          React.createElement('div', {
-            className: 'lets-work-text',
-            style: {
-              fontFamily: "'Unbounded', 'Archivo', sans-serif",
-              fontWeight: 600,
-              fontSize: 'clamp(50px, 15vw, 100px)',
-              lineHeight: 1.1,
-              letterSpacing: '-0.02em',
-              textAlign: 'center',
-              userSelect: 'none',
-              whiteSpace: 'pre-line'
-            }
-          }, "LET'S\nWORK")
-        ) : React.createElement('div', {
-          style: {
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 4,
-            pointerEvents: 'none'
-          }
-        },
-          React.createElement('svg', {
-            viewBox: '0 0 1600 400',
-            style: { width: '100%', height: '100%', maxWidth: '1600px' }
-          },
-            React.createElement('defs', null,
-              React.createElement('linearGradient', { id: 'textGrad', x1: '0%', y1: '0%', x2: '100%', y2: '0%' },
-                React.createElement('stop', { offset: '0%', stopColor: '#1a2ffb' }),
-                React.createElement('stop', { offset: '33%', stopColor: '#ff003c' }),
-                React.createElement('stop', { offset: '66%', stopColor: '#ffbc00' }),
-                React.createElement('stop', { offset: '100%', stopColor: '#00f3ff' })
-              )
-            ),
-            React.createElement('text', {
-              x: '50%',
-              y: '50%',
-              textAnchor: 'middle',
-              dominantBaseline: 'middle',
-              className: 'outline-text-reveal',
-              style: {
-                fontFamily: "'Unbounded', 'Archivo', sans-serif",
-                fontWeight: 800,
-                fontSize: '200px',
-                letterSpacing: '-0.02em',
-                userSelect: 'none'
-              }
-            }, "LET'S WORK")
+        /* LET'S WORK — marquee scrolling text */
+        React.createElement('div', { className: 'marquee-wrap' },
+          React.createElement('div', { className: 'marquee-track' },
+            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
+            React.createElement('span', { className: 'marquee-dot' }),
+            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
+            React.createElement('span', { className: 'marquee-dot' }),
+            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
+            React.createElement('span', { className: 'marquee-dot' }),
+            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
+            React.createElement('span', { className: 'marquee-dot' }),
+            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
+            React.createElement('span', { className: 'marquee-dot' }),
+            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
+            React.createElement('span', { className: 'marquee-dot' }),
+            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
+            React.createElement('span', { className: 'marquee-dot' }),
+            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
+            React.createElement('span', { className: 'marquee-dot' })
           )
         ),
 
         !isMob && /*#__PURE__*/React.createElement("div", {
           style: {
             position: 'absolute',
-            bottom: '7%',
+            bottom: '22%',
             left: '7%',
             zIndex: 4
           }
@@ -3832,7 +3777,7 @@
         !isMob && /*#__PURE__*/React.createElement("div", {
           style: {
             position: 'absolute',
-            bottom: '7%',
+            bottom: '22%',
             right: '5%',
             zIndex: 4
           }
