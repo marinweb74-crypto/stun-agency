@@ -469,52 +469,41 @@
     globalMusic.loop = true;
     globalMusic.volume = 1; // iOS ignores .volume — use GainNode instead
     globalMusic.preload = 'auto';
-    // Dual-buffer seamless loop for space track (mobile uses simple loop)
-    var spaceA = new Audio('./space.mp3');
-    var spaceB = new Audio('./space.mp3');
-    spaceA.volume = 1;
-    spaceB.volume = 1;
-    spaceA.preload = 'auto';
-    spaceB.preload = 'auto';
-    // No native loop — dual-buffer crossfade handles seamless looping on both mobile and desktop
-    var spaceCurrent = spaceA;
-    var spaceNext = spaceB;
-    var spaceDuration = 12; // ~12 seconds
-    var spaceCrossfade = 2; // 2 second crossfade
+    // Space track — AudioBufferSourceNode for true seamless loop (works on iOS)
     var spaceStarted = false;
     var musicTargetVol = 0.3;
     var spaceTargetVol = 0;
     var spaceCurrentVol = 0;
+    var spaceBuffer = null; // AudioBuffer loaded from space.mp3
+    var spaceSourceNode = null; // Current AudioBufferSourceNode
+    var spaceGain = null; // GainNode for space volume
 
-    // Web Audio API GainNodes — iOS ignores .volume, only GainNode works
+    // Web Audio API — single AudioContext for everything
     var musicGain = null;
-    var spaceAGain = null;
-    var spaceBGain = null;
     var audioGainCtx = null;
     try {
       audioGainCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // Music: MediaElementSource → GainNode → destination
       var musicSrc = audioGainCtx.createMediaElementSource(globalMusic);
       musicGain = audioGainCtx.createGain();
       musicGain.gain.value = 0.3;
       musicSrc.connect(musicGain);
       musicGain.connect(audioGainCtx.destination);
 
-      var spaceASrc = audioGainCtx.createMediaElementSource(spaceA);
-      spaceAGain = audioGainCtx.createGain();
-      spaceAGain.gain.value = 0;
-      spaceASrc.connect(spaceAGain);
-      spaceAGain.connect(audioGainCtx.destination);
+      // Space: GainNode ready (source connected when buffer loads)
+      spaceGain = audioGainCtx.createGain();
+      spaceGain.gain.value = 0;
+      spaceGain.connect(audioGainCtx.destination);
 
-      var spaceBSrc = audioGainCtx.createMediaElementSource(spaceB);
-      spaceBGain = audioGainCtx.createGain();
-      spaceBGain.gain.value = 0;
-      spaceBSrc.connect(spaceBGain);
-      spaceBGain.connect(audioGainCtx.destination);
-    } catch (e) {
-      // Fallback: no Web Audio API — .volume will work on desktop anyway
-    }
+      // Fetch and decode space.mp3 into AudioBuffer
+      fetch('./space.mp3').then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+        return audioGainCtx.decodeAudioData(buf);
+      }).then(function (decoded) {
+        spaceBuffer = decoded;
+      }).catch(function () {});
+    } catch (e) {}
 
-    // Helper to set volume via GainNode (iOS) or .volume (fallback)
+    // Helper to set volume via GainNode or .volume fallback
     function setMusicVol(v) {
       if (musicGain) { musicGain.gain.value = v; }
       else { globalMusic.volume = v; }
@@ -523,26 +512,30 @@
       if (musicGain) return musicGain.gain.value;
       return globalMusic.volume;
     }
-    function setSpaceAVol(v) {
-      if (spaceAGain) { spaceAGain.gain.value = v; }
-      else { spaceA.volume = v; }
+    function setSpaceVol(v) {
+      if (spaceGain) { spaceGain.gain.value = v; }
     }
-    function setSpaceBVol(v) {
-      if (spaceBGain) { spaceBGain.gain.value = v; }
-      else { spaceB.volume = v; }
+    function getSpaceVol() {
+      if (spaceGain) return spaceGain.gain.value;
+      return 0;
     }
     function startSpaceLoop() {
       if (spaceStarted) return;
+      if (!spaceBuffer || !audioGainCtx) return;
       spaceStarted = true;
-      spaceCurrent.currentTime = 0;
-      spaceCurrent.play().catch(function () { });
+      // Create new source node (they're one-shot, must recreate each time)
+      spaceSourceNode = audioGainCtx.createBufferSource();
+      spaceSourceNode.buffer = spaceBuffer;
+      spaceSourceNode.loop = true; // TRUE seamless loop at hardware level
+      spaceSourceNode.connect(spaceGain);
+      spaceSourceNode.start(0);
     }
     function stopSpaceLoop() {
       spaceStarted = false;
-      spaceA.pause();
-      spaceB.pause();
-      spaceA.currentTime = 0;
-      spaceB.currentTime = 0;
+      if (spaceSourceNode) {
+        try { spaceSourceNode.stop(); } catch (e) {}
+        spaceSourceNode = null;
+      }
     }
 
     // Smooth crossfade tick — only runs when sound is on
@@ -566,45 +559,13 @@
         globalMusic.pause();
         setMusicVol(0);
       }
-      // Smooth space target vol
+      // Smooth space volume — AudioBufferSourceNode handles seamless loop
       var svStep = 0.008;
       if (Math.abs(spaceCurrentVol - spaceTargetVol) > 0.005) {
         spaceCurrentVol += spaceTargetVol > spaceCurrentVol ? svStep : -svStep;
         spaceCurrentVol = Math.max(0, Math.min(1, spaceCurrentVol));
       }
-
-      // Dual buffer crossfade logic (desktop only — mobile uses native loop)
-      // Dual buffer crossfade — same logic for mobile and desktop
-      if (spaceStarted && spaceCurrent.duration) {
-        var timeLeft = spaceCurrent.duration - spaceCurrent.currentTime;
-        if (timeLeft < spaceCrossfade && spaceNext.paused) {
-          // Start next buffer
-          spaceNext.currentTime = 0;
-          if (spaceCurrent === spaceA) setSpaceBVol(0);
-          else setSpaceAVol(0);
-          spaceNext.play().catch(function () { });
-        }
-        if (timeLeft < spaceCrossfade) {
-          var fade = timeLeft / spaceCrossfade; // 1→0
-          if (spaceCurrent === spaceA) {
-            setSpaceAVol(spaceCurrentVol * fade);
-            setSpaceBVol(spaceCurrentVol * (1 - fade));
-          } else {
-            setSpaceBVol(spaceCurrentVol * fade);
-            setSpaceAVol(spaceCurrentVol * (1 - fade));
-          }
-        } else {
-          if (spaceCurrent === spaceA) setSpaceAVol(spaceCurrentVol);
-          else setSpaceBVol(spaceCurrentVol);
-        }
-        // Swap when current ends
-        if (spaceCurrent.ended || spaceCurrent.currentTime >= spaceCurrent.duration - 0.05) {
-          spaceCurrent.pause();
-          var tmp = spaceCurrent;
-          spaceCurrent = spaceNext;
-          spaceNext = tmp;
-        }
-      }
+      setSpaceVol(spaceCurrentVol);
       crossfadeRAF = requestAnimationFrame(crossfadeTick);
     }
     function startCrossfade() {
@@ -1666,7 +1627,8 @@
                 '\nmusic.paused: ' + globalMusic.paused +
                 '\ncrossfadeRAF: ' + (crossfadeRAF ? 'RUNNING' : 'null') +
                 '\nspaceStarted: ' + spaceStarted +
-                '\nspaceTargetVol: ' + spaceTargetVol +
+                '\nspaceVol: ' + getSpaceVol().toFixed(3) +
+                '\nspaceBuffer: ' + (spaceBuffer ? 'LOADED' : 'null') +
                 '\nscrollY: ' + Math.round(window.scrollY);
             }
           } else {
@@ -1717,22 +1679,10 @@
               musicTargetVol = 0.3;
               spaceTargetVol = 0;
             }
-            // Prime BOTH spaceA and spaceB inside gesture chain for iOS
-            setSpaceAVol(0);
-            setSpaceBVol(0);
-            spaceA.play().then(function () {
-              if (inAbout) {
-                startSpaceLoop();
-              } else {
-                spaceA.pause();
-                spaceA.currentTime = 0;
-              }
-            }).catch(function () {});
-            // Prime spaceB too — so dual-buffer crossfade works on mobile
-            spaceB.play().then(function () {
-              spaceB.pause();
-              spaceB.currentTime = 0;
-            }).catch(function () {});
+            // Start space loop if already in About section
+            if (inAbout) {
+              startSpaceLoop();
+            }
           }).catch(function () { });
         };
         // Only real user activation events (not scroll/wheel/touchmove/mousemove)
