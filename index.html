@@ -444,6 +444,13 @@
       }
     }
 
+    /* Desktop: hide marquee, show glass text */
+    @media (min-width: 768px) {
+      .marquee-wrap {
+        display: none;
+      }
+    }
+
     @media (max-width: 767px) {
       .marquee-item {
         font-size: clamp(80px, 24vw, 160px);
@@ -452,6 +459,61 @@
       .marquee-wrap {
         bottom: 10%;
         opacity: 0.5;
+      }
+      .glass-text-wrap {
+        display: none !important;
+      }
+    }
+
+    /* Glass text behind robot — desktop only */
+    .glass-text-wrap {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .glass-text {
+      font-family: 'Archivo', sans-serif;
+      font-weight: 900;
+      font-size: clamp(120px, 18vw, 320px);
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
+      color: rgba(255, 255, 255, 0.07);
+      position: relative;
+      user-select: none;
+      line-height: 1;
+    }
+
+    .glass-text::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(
+        105deg,
+        transparent 0%,
+        transparent 35%,
+        rgba(255, 255, 255, 0.12) 45%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.12) 55%,
+        transparent 65%,
+        transparent 100%
+      );
+      animation: glass-shine 4s ease-in-out infinite;
+    }
+
+    @keyframes glass-shine {
+      0% {
+        left: -100%;
+      }
+      100% {
+        left: 200%;
       }
     }
   </style>
@@ -3667,6 +3729,10 @@
             zIndex: 0
           }
         }),
+        // Glass text behind robot — desktop only
+        !isMob && React.createElement('div', { className: 'glass-text-wrap' },
+          React.createElement('span', { className: 'glass-text' }, "LET'S WORK")
+        ),
         // Solid bar — guarantees logo is hidden (mobile only)
         isMob && React.createElement('div', {
           style: {
