@@ -3569,8 +3569,8 @@
             position: 'absolute',
             bottom: 0,
             right: 0,
-            width: '300px',
-            height: '60px',
+            width: isMob ? '120px' : '300px',
+            height: isMob ? '40px' : '60px',
             background: '#0a0a0a',
             zIndex: 10,
             pointerEvents: 'auto'
@@ -3614,12 +3614,12 @@
           className: "outline-text-reveal",
           style: {
             fontFamily: "'Unbounded', 'Archivo', sans-serif",
-            fontWeight: 800,
-            fontSize: '180px',
+            fontWeight: 600,
+            fontSize: '140px',
             letterSpacing: '-0.02em',
             userSelect: 'none'
           }
-        }, /*#__PURE__*/React.createElement("tspan", { x: "50%", dy: "200" }, "LET'S"), /*#__PURE__*/React.createElement("tspan", { x: "50%", dy: "180" }, "WORK"))
+        }, /*#__PURE__*/React.createElement("tspan", { x: "50%", dy: "180" }, "LET'S"), /*#__PURE__*/React.createElement("tspan", { x: "50%", dy: "160" }, "WORK"))
             : /*#__PURE__*/React.createElement("text", {
           x: "50%",
           y: "50%",
