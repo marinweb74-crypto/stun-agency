@@ -3595,19 +3595,28 @@
             justifyContent: 'center',
             zIndex: isMob ? 12 : 4,
             pointerEvents: 'none',
-            transform: isMob ? 'translateZ(0)' : 'none',
+            transform: isMob ? 'translate3d(0,0,1px)' : 'none',
+            WebkitTransform: isMob ? 'translate3d(0,0,1px)' : 'none',
             willChange: isMob ? 'transform' : 'auto',
             isolation: isMob ? 'isolate' : 'auto'
+          }
+        },
+          /*#__PURE__*/React.createElement("div", {
+          style: {
+            width: '100%',
+            height: '100%',
+            maxWidth: isMob ? '100%' : '1600px',
+            transform: isMob ? 'translate3d(0,0,0)' : 'none',
+            WebkitTransform: isMob ? 'translate3d(0,0,0)' : 'none',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden'
           }
         },
           /*#__PURE__*/React.createElement("svg", {
           viewBox: isMob ? "0 0 800 500" : "0 0 1600 400",
           style: {
             width: '100%',
-            height: '100%',
-            maxWidth: isMob ? '100%' : '1600px',
-            transform: isMob ? 'translateZ(0)' : 'none',
-            backfaceVisibility: isMob ? 'hidden' : 'visible'
+            height: '100%'
           }
         },
             /*#__PURE__*/React.createElement("defs", null,
@@ -3643,6 +3652,7 @@
             userSelect: 'none'
           }
         }, "LET'S WORK")
+        )
         )
         ),
 
