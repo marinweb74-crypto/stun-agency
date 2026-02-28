@@ -3670,12 +3670,16 @@
         tCtx.imageSmoothingEnabled = true;
         tCtx.imageSmoothingQuality = 'high';
         tCtx.clearRect(0, 0, cw, ch);
-        var fontSize = Math.round(ch * 0.6);
+        var fontSize = Math.round(ch * 0.3);
         tCtx.font = '900 ' + fontSize + 'px Archivo, sans-serif';
         tCtx.textAlign = 'center';
         tCtx.textBaseline = 'middle';
         tCtx.fillStyle = '#ffffff';
-        tCtx.fillText("LET'S WORK", cw / 2, ch / 2);
+        tCtx.save();
+        tCtx.translate(cw / 2, ch / 2);
+        tCtx.scale(1, 2);
+        tCtx.fillText("LET'S WORK", 0, 0);
+        tCtx.restore();
 
         // 2. Three.js scene
         var scene = new THREE.Scene();
