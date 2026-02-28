@@ -508,6 +508,10 @@
         crossfadeRAF = null;
         return;
       }
+      // If music should be playing but is paused — restart it
+      if (globalMusic.paused && musicTargetVol > 0) {
+        globalMusic.play().catch(function () {});
+      }
       var step = 0.01;
       var mv = parseFloat(globalMusic.volume) || 0;
       if (Math.abs(mv - musicTargetVol) > 0.005) {
@@ -1577,12 +1581,12 @@
             logo.style.color = isDark ? '#F0F1FA' : '#0a0a12';
           }
 
-          // Crossfade: detect About section
-          if (aboutEl && globalSoundOn) {
+          // Crossfade: detect About section (always set targets, even before sound unlocks)
+          if (aboutEl) {
             var rect = aboutEl.getBoundingClientRect();
             var vh = window.innerHeight;
             if (rect.top < vh * 0.5) {
-              startSpaceLoop();
+              if (globalSoundOn) startSpaceLoop();
               musicTargetVol = 0;
               spaceTargetVol = 0.35;
             } else {
@@ -1606,28 +1610,14 @@
           if (audioCtx && audioCtx.state === 'suspended') {
             audioCtx.resume();
           }
-          // Prime space buffers SYNCHRONOUSLY in the gesture (before .then)
-          spaceA.play().then(function () { spaceA.pause(); spaceA.currentTime = 0; }).catch(function () { });
-          spaceB.play().then(function () { spaceB.pause(); spaceB.currentTime = 0; }).catch(function () { });
           globalMusic.play().then(function () {
             audioStarted.current = true;
             globalSoundOn = true;
             startCrossfade();
-            // Evaluate current scroll position instead of hardcoding volume
-            var aEl = document.getElementById('about');
-            if (aEl) {
-              var r = aEl.getBoundingClientRect();
-              if (r.top < window.innerHeight * 0.5) {
-                musicTargetVol = 0;
-                spaceTargetVol = 0.35;
-                startSpaceLoop();
-              } else {
-                musicTargetVol = 0.3;
-                spaceTargetVol = 0;
-              }
-            } else {
-              musicTargetVol = 0.3;
-            }
+            musicTargetVol = 0.3;
+            // Prime space buffers via load() — no playback, just preload into memory
+            spaceA.load();
+            spaceB.load();
           }).catch(function () { });
         };
         // Only real user activation events (not scroll/wheel/touchmove/mousemove)
