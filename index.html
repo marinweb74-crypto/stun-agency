@@ -423,24 +423,16 @@
     }
 
     .marquee-item {
-      font-family: 'Unbounded', 'Archivo', sans-serif;
-      font-weight: 800;
-      color: transparent;
-      -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 3px #1a2ffb;
+      font-family: 'Archivo', sans-serif;
+      font-weight: 900;
+      color: #fff;
+      -webkit-text-fill-color: #fff;
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
       white-space: nowrap;
       user-select: none;
-      padding: 0 20px;
+      padding: 0 40px;
       font-size: clamp(80px, 10vw, 160px);
-    }
-
-    .marquee-dot {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #1a2ffb;
-      flex-shrink: 0;
-      margin: 0 10px;
     }
 
     @keyframes marquee-scroll {
@@ -455,12 +447,7 @@
     @media (max-width: 767px) {
       .marquee-item {
         font-size: clamp(40px, 12vw, 80px);
-        -webkit-text-stroke: 2px #1a2ffb;
-      }
-      .marquee-dot {
-        width: 10px;
-        height: 10px;
-        margin: 0 6px;
+        padding: 0 20px;
       }
       .marquee-wrap {
         bottom: 10%;
@@ -3726,21 +3713,13 @@
         React.createElement('div', { className: 'marquee-wrap' },
           React.createElement('div', { className: 'marquee-track' },
             React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-dot' }),
             React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-dot' }),
             React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-dot' }),
             React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-dot' }),
             React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-dot' }),
             React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-dot' }),
             React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-dot' }),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-dot' })
+            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK")
           )
         ),
 
