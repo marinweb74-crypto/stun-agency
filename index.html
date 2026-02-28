@@ -3656,17 +3656,19 @@
         var container = sectionRef.current;
         if (!container || typeof THREE === 'undefined') return;
 
-        // 1. Render text to 2D canvas at high resolution
+        // 1. Render text to 2D canvas at 3x resolution for crisp edges
         var w = container.offsetWidth;
         var h = container.offsetHeight;
-        var dpr = Math.min(window.devicePixelRatio, 2);
-        var cw = Math.round(w * dpr);
-        var ch = Math.round(h * dpr);
+        var scale = 3;
+        var cw = Math.round(w * scale);
+        var ch = Math.round(h * scale);
 
         var textCanvas = document.createElement('canvas');
         textCanvas.width = cw;
         textCanvas.height = ch;
         var tCtx = textCanvas.getContext('2d');
+        tCtx.imageSmoothingEnabled = true;
+        tCtx.imageSmoothingQuality = 'high';
         tCtx.clearRect(0, 0, cw, ch);
         var fontSize = Math.round(ch * 0.3);
         tCtx.font = '900 ' + fontSize + 'px Archivo, sans-serif';
@@ -3682,70 +3684,46 @@
 
         var glRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         glRenderer.setSize(w, h);
-        glRenderer.setPixelRatio(dpr);
+        glRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         glRenderer.domElement.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;';
         container.insertBefore(glRenderer.domElement, container.firstChild);
 
         var textTexture = new THREE.CanvasTexture(textCanvas);
-        textTexture.minFilter = THREE.LinearFilter;
+        textTexture.generateMipmaps = true;
+        textTexture.minFilter = THREE.LinearMipmapLinearFilter;
         textTexture.magFilter = THREE.LinearFilter;
+        textTexture.anisotropy = glRenderer.capabilities.getMaxAnisotropy();
 
-        // 3. Custom glass shader
-        var vertexShader = [
-          'varying vec2 vUv;',
-          'void main() {',
-          '  vUv = uv;',
-          '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
-          '}'
-        ].join('\n');
+        // 3. Glass shader — pure white, no color
+        var vertexShader = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
 
         var fragmentShader = [
           'uniform sampler2D uTexture;',
           'uniform float uTime;',
-          'uniform vec2 uRes;',
           'varying vec2 vUv;',
           '',
           'void main() {',
-          '  vec4 tex = texture2D(uTexture, vUv);',
-          '  float mask = tex.a;',
-          '  if (mask < 0.05) discard;',
+          '  float mask = texture2D(uTexture, vUv).r;',
+          '  if (mask < 0.02) discard;',
           '',
-          '  // Glass base — subtle cool tint',
-          '  vec3 base = vec3(0.75, 0.8, 0.95);',
+          '  // Top-to-bottom reflection gradient',
+          '  float topGrad = smoothstep(0.35, 0.65, vUv.y);',
+          '  float baseAlpha = mask * (0.06 + 0.08 * topGrad);',
           '',
-          '  // Top reflection gradient (brighter at top of letters)',
-          '  float topLight = smoothstep(0.35, 0.7, vUv.y);',
-          '  base += vec3(0.25, 0.27, 0.3) * topLight;',
+          '  // Two moving specular highlights',
+          '  vec2 l1 = vec2(0.3 + 0.35 * sin(uTime * 0.4), 0.55 + 0.12 * cos(uTime * 0.3));',
+          '  vec2 l2 = vec2(0.7 + 0.25 * cos(uTime * 0.5), 0.45 + 0.15 * sin(uTime * 0.35));',
+          '  float s1 = pow(max(0.0, 1.0 - distance(vUv, l1) * 3.5), 14.0) * mask;',
+          '  float s2 = pow(max(0.0, 1.0 - distance(vUv, l2) * 4.5), 18.0) * mask;',
           '',
-          '  // Animated specular highlights (two light sources)',
-          '  vec2 light1 = vec2(0.3 + 0.35 * sin(uTime * 0.4), 0.6 + 0.15 * cos(uTime * 0.3));',
-          '  vec2 light2 = vec2(0.7 + 0.25 * cos(uTime * 0.5), 0.4 + 0.2 * sin(uTime * 0.35));',
-          '  float spec1 = pow(max(0.0, 1.0 - distance(vUv, light1) * 3.0), 12.0);',
-          '  float spec2 = pow(max(0.0, 1.0 - distance(vUv, light2) * 4.0), 16.0);',
+          '  // Caustic shimmer',
+          '  float c = sin(vUv.x * 50.0 + uTime) * cos(vUv.y * 35.0 + uTime * 0.7);',
+          '  c = pow(max(0.0, c), 5.0) * 0.1 * mask;',
           '',
-          '  // Edge detection for Fresnel-like rim light',
-          '  float dx = abs(dFdx(mask)) * uRes.x;',
-          '  float dy = abs(dFdy(mask)) * uRes.y;',
-          '  float edge = clamp((dx + dy) * 1.5, 0.0, 1.0);',
-          '',
-          '  // Chromatic aberration on edges',
-          '  float rr = texture2D(uTexture, vUv + vec2(0.0015, 0.0)).a;',
-          '  float bb = texture2D(uTexture, vUv - vec2(0.0015, 0.0)).a;',
-          '  vec3 chroma = vec3(rr * 0.4, 0.0, bb * 0.5) * edge;',
-          '',
-          '  // Caustic pattern — animated noise-like light',
-          '  float caustic = sin(vUv.x * 40.0 + uTime * 1.2) * cos(vUv.y * 30.0 + uTime * 0.8);',
-          '  caustic = pow(max(0.0, caustic), 4.0) * 0.15 * mask;',
-          '',
-          '  // Combine everything',
-          '  vec3 color = base * 0.2 + vec3(1.0) * (spec1 * 0.7 + spec2 * 0.5) + chroma + vec3(0.8, 0.85, 1.0) * caustic;',
-          '  color += vec3(0.9, 0.92, 1.0) * edge * 0.5;',
-          '',
-          '  // Alpha: glass is mostly transparent with highlights',
-          '  float alpha = mask * 0.1 + spec1 * 0.6 + spec2 * 0.4 + edge * 0.45 + caustic;',
-          '  alpha = clamp(alpha, 0.0, 0.85);',
-          '',
-          '  gl_FragColor = vec4(color, alpha);',
+          '  // Final — all white',
+          '  float alpha = baseAlpha + s1 * 0.5 + s2 * 0.35 + c;',
+          '  alpha = clamp(alpha, 0.0, 0.7);',
+          '  gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);',
           '}'
         ].join('\n');
 
@@ -3753,8 +3731,7 @@
           transparent: true,
           uniforms: {
             uTexture: { value: textTexture },
-            uTime: { value: 0 },
-            uRes: { value: new THREE.Vector2(w, h) }
+            uTime: { value: 0 }
           },
           vertexShader: vertexShader,
           fragmentShader: fragmentShader
@@ -3789,7 +3766,6 @@
           var nw = container.offsetWidth;
           var nh = container.offsetHeight;
           glRenderer.setSize(nw, nh);
-          material.uniforms.uRes.value.set(nw, nh);
         }
         window.addEventListener('resize', onResize);
 
