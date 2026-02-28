@@ -3620,8 +3620,8 @@
           my = e.clientY - r.top;
         }
         function tick() {
-          cx = mx;
-          cy = my;
+          cx += (mx - cx) * 0.12;
+          cy += (my - cy) * 0.12;
           btn.style.left = cx + 'px';
           btn.style.top = cy + 'px';
           rafId = requestAnimationFrame(tick);
