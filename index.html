@@ -3656,17 +3656,24 @@
         var container = sectionRef.current;
         if (!container || typeof THREE === 'undefined') return;
 
-        // 1. Render text to 2D canvas as texture
+        // 1. Render text to 2D canvas at high resolution
+        var w = container.offsetWidth;
+        var h = container.offsetHeight;
+        var dpr = Math.min(window.devicePixelRatio, 2);
+        var cw = Math.round(w * dpr);
+        var ch = Math.round(h * dpr);
+
         var textCanvas = document.createElement('canvas');
-        textCanvas.width = 2048;
-        textCanvas.height = 512;
+        textCanvas.width = cw;
+        textCanvas.height = ch;
         var tCtx = textCanvas.getContext('2d');
-        tCtx.clearRect(0, 0, 2048, 512);
-        tCtx.font = '900 260px Archivo, sans-serif';
+        tCtx.clearRect(0, 0, cw, ch);
+        var fontSize = Math.round(ch * 0.3);
+        tCtx.font = '900 ' + fontSize + 'px Archivo, sans-serif';
         tCtx.textAlign = 'center';
         tCtx.textBaseline = 'middle';
         tCtx.fillStyle = '#ffffff';
-        tCtx.fillText("LET'S WORK", 1024, 260);
+        tCtx.fillText("LET'S WORK", cw / 2, ch / 2);
 
         // 2. Three.js scene
         var scene = new THREE.Scene();
@@ -3674,12 +3681,10 @@
         camera.position.z = 1;
 
         var glRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        var w = container.offsetWidth;
-        var h = container.offsetHeight;
         glRenderer.setSize(w, h);
-        glRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        glRenderer.domElement.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;';
-        container.appendChild(glRenderer.domElement);
+        glRenderer.setPixelRatio(dpr);
+        glRenderer.domElement.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;';
+        container.insertBefore(glRenderer.domElement, container.firstChild);
 
         var textTexture = new THREE.CanvasTexture(textCanvas);
         textTexture.minFilter = THREE.LinearFilter;
@@ -3815,7 +3820,7 @@
           containIntrinsicSize: '0 100vh'
         }
       },
-        // Container for Spline viewer
+        // Container for Spline viewer (above glass text)
         React.createElement('div', {
           ref: splineContainerRef,
           style: {
@@ -3823,7 +3828,7 @@
             inset: 0,
             width: '100%',
             height: '100%',
-            zIndex: 0
+            zIndex: 2
           }
         }),
         // Solid bar — guarantees logo is hidden (mobile only)
