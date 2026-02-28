@@ -576,8 +576,20 @@
       }
 
       // Dual buffer crossfade logic (desktop only — mobile uses native loop)
-      if (spaceStarted && isMobile) {
-        // Mobile: simple volume control via GainNode, native loop handles repeat
+      if (spaceStarted && isMobile && spaceA.duration) {
+        // Mobile: native loop + GainNode fade at loop boundary for smooth transition
+        var sFade = 1.5; // seconds to fade out/in at loop edges
+        var sTimeLeft = spaceA.duration - spaceA.currentTime;
+        var sTime = spaceA.currentTime;
+        var sMult = 1;
+        if (sTimeLeft < sFade) {
+          sMult = sTimeLeft / sFade; // fade out: 1→0
+        } else if (sTime < sFade) {
+          sMult = sTime / sFade; // fade in: 0→1
+        }
+        setSpaceAVol(spaceCurrentVol * sMult);
+      } else if (spaceStarted && isMobile) {
+        // Mobile: duration not loaded yet, just set volume
         setSpaceAVol(spaceCurrentVol);
       } else if (spaceStarted && spaceCurrent.duration) {
         var timeLeft = spaceCurrent.duration - spaceCurrent.currentTime;
