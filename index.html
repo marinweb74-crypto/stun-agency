@@ -439,6 +439,7 @@
       0% {
         transform: translate3d(0, 0, 2px);
       }
+
       100% {
         transform: translate3d(-50%, 0, 2px);
       }
@@ -449,12 +450,14 @@
         font-size: clamp(80px, 24vw, 160px);
         padding: 0 30px;
       }
+
       .marquee-wrap {
         bottom: 10%;
         opacity: 0.5;
       }
     }
 
+    /* LET'S WORK — gradient-filled text, no stroke animation */
   </style>
 </head>
 
@@ -556,8 +559,8 @@
           }
         }
         spaceBuffer = newBuf;
-      }).catch(function () {});
-    } catch (e) {}
+      }).catch(function () { });
+    } catch (e) { }
 
     // Helper to set volume via GainNode or .volume fallback
     function setMusicVol(v) {
@@ -589,7 +592,7 @@
     function stopSpaceLoop() {
       spaceStarted = false;
       if (spaceSourceNode) {
-        try { spaceSourceNode.stop(); } catch (e) {}
+        try { spaceSourceNode.stop(); } catch (e) { }
         spaceSourceNode = null;
       }
     }
@@ -603,7 +606,7 @@
       }
       // If music should be playing but is paused — restart it
       if (globalMusic.paused && musicTargetVol > 0) {
-        globalMusic.play().catch(function () {});
+        globalMusic.play().catch(function () { });
       }
       var step = 0.01;
       var mv = getMusicVol();
@@ -3362,7 +3365,7 @@
           // Video: show when card visible
           if (v1) {
             if (c1.op > 0.3) {
-              if (isMob && v1.paused) v1.play().catch(function(){});
+              if (isMob && v1.paused) v1.play().catch(function () { });
             } else {
               if (!v1.paused) v1.pause();
               if (!isMob) { var pb1 = play1BtnRef.current; if (pb1) pb1.style.opacity = '1'; }
@@ -3370,7 +3373,7 @@
           }
           if (v2) {
             if (c2.op > 0.3) {
-              if (isMob && v2.paused) v2.play().catch(function(){});
+              if (isMob && v2.paused) v2.play().catch(function () { });
             } else {
               if (!v2.paused) v2.pause();
               if (!isMob) { var pb2 = play2BtnRef.current; if (pb2) pb2.style.opacity = '1'; }
@@ -3457,22 +3460,24 @@
         /*#__PURE__*/React.createElement("div", { style: overlayStyle },
           /*#__PURE__*/React.createElement("h3", { style: titleStyle }, "POP IN THE CITY"),
           /*#__PURE__*/React.createElement("p", { style: descStyle }, "\u0421\u0430\u0439\u0442 \u0434\u043B\u044F \u043D\u0430\u0434\u0443\u0432\u043D\u044B\u0445 \u0430\u0442\u0442\u0440\u0430\u043A\u0446\u0438\u043E\u043D\u043E\u0432 \u0432 \u041D\u044C\u044E-\u0419\u043E\u0440\u043A\u0435")
-      )
+        )
       ),
       /*#__PURE__*/React.createElement("div", { ref: rect2Ref, style: Object.assign({}, rectStyle, isMob ? {} : { cursor: 'pointer' }), onClick: isMob ? undefined : function () { togglePlay(vid2Ref, play2BtnRef); } },
         /*#__PURE__*/React.createElement("video", { ref: vid2Ref, src: './portfolio-reel-2.mp4', muted: true, loop: true, playsInline: true, preload: 'auto', style: vidStyle }),
         !isMob && /*#__PURE__*/React.createElement("div", { ref: play2BtnRef, style: playBtnStyle },
           /*#__PURE__*/React.createElement("div", { style: playTriStyle })
         ),
-        /*#__PURE__*/React.createElement("div", { style: {
-          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 3,
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
-          padding: isMob ? '24px 20px 40px' : '32px 40px 60px',
-          borderRadius: rectR + ' ' + rectR + ' 0 0'
-        } },
+        /*#__PURE__*/React.createElement("div", {
+          style: {
+            position: 'absolute', top: 0, left: 0, right: 0, zIndex: 3,
+            background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
+            padding: isMob ? '24px 20px 40px' : '32px 40px 60px',
+            borderRadius: rectR + ' ' + rectR + ' 0 0'
+          }
+        },
           /*#__PURE__*/React.createElement("h3", { style: titleStyle }, "CLAYNOSAURZ"),
           /*#__PURE__*/React.createElement("p", { style: descStyle }, "\u041C\u0438\u043D\u0438-\u0444\u0438\u043B\u044C\u043C\u044B \u0441 3D \u043C\u0438\u0440\u043E\u0432\u043E\u0433\u043E \u0443\u0440\u043E\u0432\u043D\u044F")
-      )
+        )
       )));
     }
 
@@ -3665,7 +3670,7 @@
             inset: 0,
             width: '100%',
             height: '100%',
-            zIndex: 0
+            zIndex: 2
           }
         }),
         // Solid bar — guarantees logo is hidden (mobile only)
@@ -3711,19 +3716,54 @@
           }
         }),
 
-        /* LET'S WORK — marquee scrolling text */
-        React.createElement('div', { className: 'marquee-wrap' },
-          React.createElement('div', { className: 'marquee-track' },
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK")
-          )
-        ),
+        /* LET'S WORK — both mobile and desktop use SVG outline with rainbow gradient */
+        (function () {
+          var mobSize = isMob;
+          var lwFont = { fontFamily: 'Archivo, sans-serif', fontSize: mobSize ? '28vw' : '22vw', fontWeight: 900, letterSpacing: '-0.04em' };
+          var sw = mobSize ? '2.5' : '1.5';
+          return React.createElement('svg', {
+            style: {
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              zIndex: mobSize ? 12 : 0, pointerEvents: 'none', overflow: 'visible'
+            },
+            xmlns: 'http://www.w3.org/2000/svg'
+          },
+            React.createElement('defs', null,
+              React.createElement('linearGradient', {
+                id: 'lw-rainbow', x1: '0%', y1: '0%', x2: '100%', y2: '0%', gradientUnits: 'userSpaceOnUse'
+              },
+                React.createElement('stop', { offset: '0%', stopColor: '#fff' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#fff;#ff003c;#1a2ffb;#9b30ff;#ffd700;#fff', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '20%', stopColor: '#ff003c' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#ff003c;#1a2ffb;#9b30ff;#ffd700;#fff;#ff003c', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '40%', stopColor: '#1a2ffb' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#1a2ffb;#9b30ff;#ffd700;#fff;#ff003c;#1a2ffb', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '60%', stopColor: '#9b30ff' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#9b30ff;#ffd700;#fff;#ff003c;#1a2ffb;#9b30ff', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '80%', stopColor: '#ffd700' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#ffd700;#fff;#ff003c;#1a2ffb;#9b30ff;#ffd700', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '100%', stopColor: '#fff' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#fff;#ff003c;#1a2ffb;#9b30ff;#ffd700;#fff', dur: '6s', repeatCount: 'indefinite' })
+                )
+              )
+            ),
+            /* LET'S */
+            React.createElement('text', {
+              x: '50%', y: '38%', textAnchor: 'middle', dominantBaseline: 'central',
+              fill: 'none', stroke: 'url(#lw-rainbow)', strokeWidth: sw, style: lwFont
+            }, "LET\u2019S"),
+            /* WORK */
+            React.createElement('text', {
+              x: '50%', y: '66%', textAnchor: 'middle', dominantBaseline: 'central',
+              fill: 'none', stroke: 'url(#lw-rainbow)', strokeWidth: sw, style: lwFont
+            }, "WORK")
+          );
+        })(),
 
 
         !isMob && /*#__PURE__*/React.createElement("a", {
