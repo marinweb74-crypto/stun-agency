@@ -911,13 +911,13 @@
         var dpr, rtScale, rt, postScene, postCamera, postMat, postQuad, sMx, sMy, sVel;
         if (usePostProcessing) {
           dpr = devCap.pixelRatio;
-          rtScale = 0.75;
+          rtScale = 1.0;
           rt = new THREE.WebGLRenderTarget(w * dpr * rtScale, h * dpr * rtScale, {
             minFilter: THREE.LinearFilter,
             magFilter: THREE.LinearFilter,
             format: THREE.RGBAFormat,
             encoding: THREE.sRGBEncoding,
-            samples: 0
+            samples: 2
           });
           postScene = new THREE.Scene();
           postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
