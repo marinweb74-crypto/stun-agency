@@ -3527,6 +3527,7 @@
       var sectionRef = useRef(null);
       var cursorBtnRef = useRef(null);
       var splineContainerRef = useRef(null);
+      var svgRef = useRef(null);
 
       useEffect(function () {
         var el = sectionRef.current;
@@ -3595,6 +3596,24 @@
         return function () {
           obs.disconnect();
         };
+      }, []);
+
+      // Pause SVG animate when section not visible
+      useEffect(function () {
+        var svg = svgRef.current;
+        var el = sectionRef.current;
+        if (!svg || !el) return;
+        var obs = new IntersectionObserver(function (entries) {
+          if (entries[0].isIntersecting) {
+            svg.unpauseAnimations();
+          } else {
+            svg.pauseAnimations();
+          }
+        }, { threshold: 0 });
+        obs.observe(el);
+        // Start paused if not visible
+        svg.pauseAnimations();
+        return function () { obs.disconnect(); };
       }, []);
 
       // Cursor-following button
@@ -3722,6 +3741,7 @@
           var lwFont = { fontFamily: 'Archivo, sans-serif', fontSize: mobSize ? '28vw' : '22vw', fontWeight: 900, letterSpacing: '-0.04em' };
           var sw = mobSize ? '2.5' : '1.5';
           return React.createElement('svg', {
+            ref: svgRef,
             style: {
               position: 'absolute', inset: 0, width: '100%', height: '100%',
               zIndex: mobSize ? 12 : 0, pointerEvents: 'none', overflow: 'visible'
