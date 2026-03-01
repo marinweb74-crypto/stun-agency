@@ -452,42 +452,12 @@
       }
 
       .marquee-wrap {
-        bottom: 25%;
+        bottom: 10%;
         opacity: 0.5;
       }
     }
 
-    /* LET'S WORK — desktop CSS gradient outline text */
-    .lw-css-wrap {
-      position: absolute; inset: 0; width: 100%; height: 100%;
-      z-index: 0; pointer-events: none;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 0;
-    }
-    .lw-css-text {
-      font-family: 'Archivo', sans-serif;
-      font-weight: 900;
-      font-size: 22vw;
-      letter-spacing: -0.04em;
-      line-height: 0.85;
-      text-transform: uppercase;
-      color: transparent;
-      -webkit-text-stroke: 1.5px transparent;
-      background: linear-gradient(90deg, #fff, #ff003c, #1a2ffb, #9b30ff, #ffd700, #fff, #ff003c, #1a2ffb, #9b30ff, #ffd700, #fff);
-      background-size: 200% 100%;
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      -webkit-text-stroke: 1.5px;
-      -webkit-text-stroke-color: transparent;
-      paint-order: stroke fill;
-      animation: lw-shimmer 6s linear infinite;
-      will-change: background-position;
-    }
-    @keyframes lw-shimmer {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 200% 50%; }
-    }
+    /* LET'S WORK — gradient-filled text, no stroke animation */
   </style>
 </head>
 
@@ -825,8 +795,7 @@
         onMouseLeave: onLeave,
         style: {
           transition: 'transform 0.3s cubic-bezier(0.16,1,0.3,1)',
-          display: 'inline-flex',
-          overflow: 'visible'
+          display: 'inline-flex'
         }
       }, children);
     }
@@ -1795,7 +1764,7 @@
           paddingBottom: '0.1em',
           paddingLeft: '5%',
           paddingRight: '5%',
-          overflow: 'visible'
+          overflow: 'hidden'
         }
       }, /*#__PURE__*/React.createElement("div", {
         ref: logoRef,
@@ -1950,9 +1919,9 @@
         style: {
           backgroundColor: '#000',
           position: 'absolute',
-          left: '50%',
+          left: '0.15em',
           top: '50%',
-          transform: 'translate(-130%, -50%)',
+          transform: 'translateY(-50%)',
           display: 'inline-block',
           width: '0.3125em',
           height: '0.3125em',
@@ -1962,9 +1931,9 @@
         style: {
           backgroundColor: '#000',
           position: 'absolute',
-          left: '50%',
+          right: '0.15em',
           top: '50%',
-          transform: 'translate(30%, -50%)',
+          transform: 'translateY(-50%)',
           display: 'inline-block',
           width: '0.3125em',
           height: '0.3125em',
@@ -1996,7 +1965,7 @@
           alignItems: 'center'
         }
       }, "\u041E \u043D\u0430\u0441"), /*#__PURE__*/React.createElement("a", {
-        href: "#spline-scene",
+        href: "#contact",
         onClick: () => setMenuOpen(false),
         className: "text-4xl md:text-6xl font-display hover:text-accent transition",
         style: {
@@ -3747,62 +3716,55 @@
           }
         }),
 
-        /* LET'S WORK — desktop: SVG outline with rainbow gradient; mobile: classic marquee */
-        isMob ? React.createElement('div', { className: 'marquee-wrap' },
-          React.createElement('div', { className: 'marquee-track' },
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK"),
-            React.createElement('span', { className: 'marquee-item' }, "LET'S WORK")
-          )
-        ) : React.createElement('div', { className: 'lw-css-wrap' },
-          React.createElement('span', { className: 'lw-css-text' }, "LET\u2019S"),
-          React.createElement('span', { className: 'lw-css-text' }, "WORK")
-        ),
-
-
-        /* Mobile-only: Telegram CTA button under the robot */
-        isMob && React.createElement('a', {
-          href: 'https://t.me/ceoXseo',
-          target: '_blank',
-          rel: 'noopener noreferrer',
-          style: {
-            position: 'absolute',
-            bottom: '180px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '14px 28px',
-            borderRadius: '50px',
-            background: 'rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            textDecoration: 'none',
-            color: '#fff',
-            fontFamily: 'Archivo, sans-serif',
-            fontSize: '14px',
-            fontWeight: 600,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            whiteSpace: 'nowrap',
-            pointerEvents: 'auto'
-          }
-        },
-          React.createElement('svg', {
-            width: '20', height: '20', viewBox: '0 0 24 24', fill: '#fff'
+        /* LET'S WORK — both mobile and desktop use SVG outline with rainbow gradient */
+        (function () {
+          var mobSize = isMob;
+          var lwFont = { fontFamily: 'Archivo, sans-serif', fontSize: mobSize ? '28vw' : '22vw', fontWeight: 900, letterSpacing: '-0.04em' };
+          var sw = mobSize ? '2.5' : '1.5';
+          return React.createElement('svg', {
+            style: {
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              zIndex: mobSize ? 12 : 0, pointerEvents: 'none', overflow: 'visible'
+            },
+            xmlns: 'http://www.w3.org/2000/svg'
           },
-            React.createElement('path', { d: 'M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.492-1.302.48-.428-.012-1.252-.242-1.865-.44-.751-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z' })
-          ),
-          "\u041D\u0430\u043F\u0438\u0441\u0430\u0442\u044C"
-        ),
+            React.createElement('defs', null,
+              React.createElement('linearGradient', {
+                id: 'lw-rainbow', x1: '0%', y1: '0%', x2: '100%', y2: '0%', gradientUnits: 'userSpaceOnUse'
+              },
+                React.createElement('stop', { offset: '0%', stopColor: '#fff' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#fff;#ff003c;#1a2ffb;#9b30ff;#ffd700;#fff', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '20%', stopColor: '#ff003c' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#ff003c;#1a2ffb;#9b30ff;#ffd700;#fff;#ff003c', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '40%', stopColor: '#1a2ffb' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#1a2ffb;#9b30ff;#ffd700;#fff;#ff003c;#1a2ffb', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '60%', stopColor: '#9b30ff' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#9b30ff;#ffd700;#fff;#ff003c;#1a2ffb;#9b30ff', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '80%', stopColor: '#ffd700' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#ffd700;#fff;#ff003c;#1a2ffb;#9b30ff;#ffd700', dur: '6s', repeatCount: 'indefinite' })
+                ),
+                React.createElement('stop', { offset: '100%', stopColor: '#fff' },
+                  React.createElement('animate', { attributeName: 'stop-color', values: '#fff;#ff003c;#1a2ffb;#9b30ff;#ffd700;#fff', dur: '6s', repeatCount: 'indefinite' })
+                )
+              )
+            ),
+            /* LET'S */
+            React.createElement('text', {
+              x: '50%', y: '38%', textAnchor: 'middle', dominantBaseline: 'central',
+              fill: 'none', stroke: 'url(#lw-rainbow)', strokeWidth: sw, style: lwFont
+            }, "LET\u2019S"),
+            /* WORK */
+            React.createElement('text', {
+              x: '50%', y: '66%', textAnchor: 'middle', dominantBaseline: 'central',
+              fill: 'none', stroke: 'url(#lw-rainbow)', strokeWidth: sw, style: lwFont
+            }, "WORK")
+          );
+        })(),
+
 
         !isMob && /*#__PURE__*/React.createElement("a", {
           ref: cursorBtnRef,
