@@ -1468,6 +1468,10 @@
             b.drx *= 0.95;
             b.dry *= 0.95;
             b.drz *= 0.95;
+            // Dead zone — kill micro-oscillation
+            if (b.dvx * b.dvx + b.dvy * b.dvy + b.dvz * b.dvz < 0.0001) { b.dvx = 0; b.dvy = 0; b.dvz = 0; }
+            if (b.dx * b.dx + b.dy * b.dy + b.dz * b.dz < 0.0001) { b.dx = 0; b.dy = 0; b.dz = 0; }
+            if (b.drx * b.drx + b.dry * b.dry + b.drz * b.drz < 0.0001) { b.drx = 0; b.dry = 0; b.drz = 0; }
           }
 
           // Collision on final positions — pushes displacement
